@@ -5,7 +5,7 @@
 This project aims to implement a Distributed Supervisory Control and Data Acquisition (SCADA) system tailored for a smart factory. The system is divided into multiple modules, each addressing a specific functionality:
 
 1. **gRPC-based server and client for calculations** (current module)
-2. **Database integration** with MongoDB using PyMongo and FastAPI (upcoming module)
+2. **Database integration** with MongoDB using PyMongo and FastAPI (planned module)
 3. **Asynchronous messaging** using Kafka for real-time communication (upcoming module)
 
 The repository currently includes:
@@ -13,6 +13,7 @@ The repository currently includes:
 - The server code to handle gRPC requests.
 - The client code to make gRPC calls to the server.
 - A `.proto` file defining the gRPC service and messages.
+- A FastAPI server with CRUD endpoints (database integration not yet implemented).
 
 ## Requirements
 
@@ -57,6 +58,8 @@ This command generates two files:
 
 ## Usage
 
+### Running the gRPC Server and Client
+
 1. Start the gRPC server:
 
    ```bash
@@ -69,12 +72,22 @@ This command generates two files:
    python client.py
    ```
 
+### Running the FastAPI Server
+
+The FastAPI server provides CRUD endpoints, but database integration is not yet implemented. Update the `db_service.py` file to provide the correct database URL before starting the server. Once updated, start the server using Uvicorn:
+
+```bash
+uvicorn db_service:app --reload
+```
+
+Visit the FastAPI interactive API documentation at `http://127.0.0.1:8000/docs` to test the endpoints.
+
 ## Future Modules
 
 1. **Database Integration**
 
-   - Implement a MongoDB database for storing and querying factory data.
-   - Use FastAPI to create RESTful APIs for interacting with the database.
+   - Implement MongoDB for storing and querying factory data.
+   - Integrate the database with the existing FastAPI CRUD endpoints.
 
 2. **Asynchronous Messaging**
 
@@ -85,7 +98,7 @@ This command generates two files:
 
 - Ensure that any changes to `grpc_server.proto` are reflected by regenerating the Python files as mentioned above.
 - Follow best practices for gRPC service design, such as defining clear message structures and service methods in the `.proto` file.
-- Upcoming modules will expand the capabilities of this system to cover database operations and real-time messaging.
+- Future modules will expand the capabilities of this system to cover database integration, real-time messaging, and enhanced system performance.
 
 ## License
 
