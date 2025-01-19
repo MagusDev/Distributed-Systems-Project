@@ -70,4 +70,4 @@ async def delete_item(key: str):
         raise HTTPException(status_code=500, detail=f"Error deleting item: {e}")
 
 # Run FastAPI with Uvicorn
-# Command: uvicorn filename:app --reload
+# Command: uvicorn API_gateway:app --reload
