@@ -3,8 +3,7 @@ import random
 import json
 from typing import Dict, Any
 import uuid
-from pymodbus.server.sync import ModbusTcpServer
-from pymodbus.factory import ClientFactory
+from pymodbus.server import StartTcpServer as ModbusTcpServer
 from pymodbus.datastore import ModbusSlaveContext, ModbusContext
 from pymodbus.datastore.store import ModbusSequentialDataBlock
 from pymodbus.device import ModbusDeviceIdentification
