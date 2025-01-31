@@ -1,18 +1,15 @@
 import time
 import random
 import json
-from typing import Dict, Any
 import uuid
-from pymodbus.server import StartTcpServer as ModbusTcpServer
-from pymodbus.datastore import ModbusSlaveContext, ModbusContext
-from pymodbus.datastore.store import ModbusSequentialDataBlock
-from pymodbus.device import ModbusDeviceIdentification
-from pymodbus.transaction import ModbusRtuFramer, ModbusTcpFramer
+import paho.mqtt.client as mqtt
 
 class PLCSimulator:
-    def __init__(self, modbus_port=5020):
+    def __init__(self, mqtt_broker="localhost", mqtt_port=1883, mqtt_topic="plc/data"):
         self.plc_id = str(uuid.uuid4())
-        self.modbus_port = modbus_port
+        self.mqtt_broker = mqtt_broker
+        self.mqtt_port = mqtt_port
+        self.mqtt_topic = mqtt_topic
         
         # Initialize PLC variables
         self.variables = {
@@ -29,38 +26,21 @@ class PLCSimulator:
             'system_pressure': (0.0, 10.0),
             'oil_temperature': (20.0, 95.0)
         }
-
-        # Set up Modbus server
-        self.store = self._create_modbus_store()
-        self.server = ModbusTcpServer(self.store, port=self.modbus_port)
-
-    def _create_modbus_store(self):
-        # Create a Modbus data store with holding registers for each PLC variable
-        block = ModbusSequentialDataBlock(0, [0] * 4)  # For 4 registers (one for each PLC variable)
-        context = ModbusSlaveContext(
-            hr=block,  # Holding Registers for the PLC variables
-        )
-        return context
+        
+        # Set up MQTT client
+        self.mqtt_client = mqtt.Client()
+        self.mqtt_client.connect(self.mqtt_broker, self.mqtt_port, 60)
 
     def simulate_process(self):
         # Simulate changes in PLC variables
         for var_name in self.variables:
             current = self.variables[var_name]
             min_val, max_val = self.ranges[var_name]
-            # Simulate gradual changes
             change = random.uniform(-0.1, 0.1) * (max_val - min_val)
             new_value = max(min(current + change, max_val), min_val)
             self.variables[var_name] = round(new_value, 2)
 
-        # Update Modbus holding registers with the latest PLC data
-        self.store.getSlave(1).setValues(3, 0, [
-            self.variables['motor_speed'],
-            self.variables['power_output'],
-            self.variables['system_pressure'],
-            self.variables['oil_temperature']
-        ])
-
-        # Create PLC data reading (for logging or additional usage)
+        # Create PLC data reading
         reading = {
             'plc_id': self.plc_id,
             'timestamp': time.time(),
@@ -84,16 +64,16 @@ class PLCSimulator:
         return units.get(variable_name, '')
 
     def run(self):
-        print(f"Starting Modbus PLC simulation on port {self.modbus_port}...")
+        print(f"Starting MQTT PLC simulation, publishing to {self.mqtt_topic}...")
         while True:
             try:
-                # Simulate process and update the Modbus registers
                 plc_data = self.simulate_process()
-
-                # Log the PLC data (for monitoring)
-                print(f"Simulated PLC data: {json.dumps(plc_data, indent=2)}")
+                json_data = json.dumps(plc_data)
                 
-                # Wait before the next update (can be adjusted based on simulation speed)
+                # Publish data to MQTT broker
+                self.mqtt_client.publish(self.mqtt_topic, json_data)
+                
+                print(f"Published PLC data: {json_data}")
                 time.sleep(1)
                 
             except Exception as e:
