@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package scada;
+
+// Import the empty.proto file
+import "google/protobuf/empty.proto";
+
+// User-related messages
+message User {
+    string id = 1;
+    string username = 2;
+    string email = 3;
+    string role = 4;
+    string created_at = 5;
+}
+
+message UserCreateRequest {
+    string username = 1;
+    string email = 2;
+    string role = 3;
+    string password = 4;
+}
+
+message UserResponse {
+    User user = 1;
+}
+
+message UserIdRequest {
+    string id = 1;
+}
+
+// Client-related messages
+message Client {
+    string id = 1;
+    string name = 2;
+    string description = 3;
+    string api_key = 4;
+    repeated string permissions = 5;
+    string created_at = 6;
+}
+
+message ClientCreateRequest {
+    string name = 1;
+    string description = 2;
+    repeated string permissions = 3;
+}
+
+message ClientResponse {
+    Client client = 1;
+}
+
+message ClientIdRequest {
+    string id = 1;
+}
+
+// PLC-related messages
+message PLCDataRequest {
+    string plc_id = 1;
+    int32 hours = 2;
+    string variable = 3;
+}
+
+message PLCDataResponse {
+    repeated string data = 1;
+}
+
+message PLCVariablesResponse {
+    repeated string variables = 1;
+}
+
+// Service definition
+service SCADAService {
+    // User operations
+    rpc CreateUser(UserCreateRequest) returns (UserResponse);
+    rpc GetUser(UserIdRequest) returns (UserResponse);
+    rpc UpdateUser(User) returns (UserResponse);
+    rpc DeleteUser(UserIdRequest) returns (google.protobuf.Empty);
+
+    // Client operations
+    rpc CreateClient(ClientCreateRequest) returns (ClientResponse);
+    rpc GetClient(ClientIdRequest) returns (ClientResponse);
+    rpc UpdateClient(Client) returns (ClientResponse);
+    rpc DeleteClient(ClientIdRequest) returns (google.protobuf.Empty);
+
+    // PLC operations
+    rpc GetPLCData(PLCDataRequest) returns (PLCDataResponse);
+    rpc GetPLCVariables(google.protobuf.Empty) returns (PLCVariablesResponse);
+}
