@@ -29,7 +29,22 @@ class PLCSimulator:
         
         # Set up MQTT client
         self.mqtt_client = mqtt.Client()
+
+        # Set callback functions for debugging
+        self.mqtt_client.on_connect = self.on_connect
+        self.mqtt_client.on_disconnect = self.on_disconnect
+        
         self.mqtt_client.connect(self.mqtt_broker, self.mqtt_port, 60)
+
+    def on_connect(self, client, userdata, flags, rc):
+        """Handle the connection event"""
+        print(f"Connected to MQTT broker with result code {rc}")
+        if rc != 0:
+            print(f"Failed to connect with code {rc}")
+
+    def on_disconnect(self, client, userdata, rc):
+        """Handle the disconnect event"""
+        print(f"Disconnected from MQTT broker with result code {rc}")
 
     def simulate_process(self):
         # Simulate changes in PLC variables
@@ -80,6 +95,14 @@ class PLCSimulator:
                 print(f"Error in PLC simulation: {e}")
                 time.sleep(1)
 
+
 if __name__ == "__main__":
-    plc = PLCSimulator()
+    # Use the Docker host IP if running on a different machine
+    # mqtt_broker = "your_docker_host_ip"
+    
+    # If running on the same machine as Docker, use localhost
+    mqtt_broker = "localhost"
+    
+    plc = PLCSimulator(mqtt_broker=mqtt_broker)
     plc.run()
+    
