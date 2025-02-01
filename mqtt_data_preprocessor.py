@@ -3,11 +3,16 @@ import paho.mqtt.client as mqtt
 from confluent_kafka import Producer
 from pymongo import MongoClient
 from bson.objectid import ObjectId
+from monitoring import ServiceMonitor
+import time
 
 class DataPreprocessingMicroservice:
     def __init__(self, mqtt_broker="localhost", mqtt_port=1883, mqtt_topic="plc/data",
                  kafka_broker="localhost:9092", kafka_topic="plc_data",
-                 mongo_uri="mongodb://localhost:27017/", mongo_db="plc_data_db"):
+                 mongo_uri="mongodb://localhost:27017/", mongo_db="plc_data_db",
+                 metrics_port=8002):
+        # Initialize monitoring
+        self.monitor = ServiceMonitor('preprocessor', metrics_port)
         # MQTT Configuration
         self.mqtt_broker = mqtt_broker
         self.mqtt_port = mqtt_port
@@ -41,21 +46,30 @@ class DataPreprocessingMicroservice:
         client.subscribe(self.mqtt_topic)
 
     def on_message(self, client, userdata, msg):
-        try:
-            # Decode and process the incoming MQTT message
-            data = json.loads(msg.payload.decode("utf-8"))
-            processed_data = self.process_data(data)
+        with self.monitor.request_latency.labels(operation='process_message').time():
+            try:
+                self.monitor.messages_total.labels(type='processed').inc()
+                self.monitor.requests_in_progress.inc()
+                
+                # Decode and process the incoming MQTT message
+                data = json.loads(msg.payload.decode("utf-8"))
+                processed_data = self.process_data(data)
 
-            # Send processed data to Kafka
-            self.send_to_kafka(processed_data)
+                # Track message size
+                self.monitor.request_size.observe(len(msg.payload))
 
-            # Optionally, store the processed data in MongoDB
-            self.store_in_mongodb(processed_data)
+                # Send processed data to Kafka
+                self.send_to_kafka(processed_data)
 
-            # Print processed data (ensure no ObjectId is present)
-            print("Processed Data:", json.dumps(processed_data, indent=2))
-        except Exception as e:
-            print("Error processing message:", e)
+                # Store in MongoDB
+                with self.monitor.db_query_latency.time():
+                    self.store_in_mongodb(processed_data)
+
+            except Exception as e:
+                self.monitor.messages_failed.inc()
+                print("Error processing message:", e)
+            finally:
+                self.monitor.requests_in_progress.dec()
 
     def process_data(self, data):
         # Extract relevant information
@@ -90,21 +104,20 @@ class DataPreprocessingMicroservice:
         return (value - min_val) / (max_val - min_val) if max_val > min_val else 0
 
     def send_to_kafka(self, data):
-        try:
-            # Ensure no ObjectId is present in the data
-            if "_id" in data:
-                del data["_id"]  # Remove the _id field
+        with self.monitor.request_latency.labels(operation='send_to_kafka').time():
+            try:
+                if "_id" in data:
+                    del data["_id"]
 
-            # Serialize data to JSON and send to Kafka
-            self.kafka_producer.produce(
-                self.kafka_topic,
-                json.dumps(data).encode("utf-8"),
-                callback=self.on_delivery
-            )
-            self.kafka_producer.flush()  # Ensure the message is sent
-            print(f"Data sent to Kafka topic: {self.kafka_topic}")
-        except Exception as e:
-            print(f"Error sending data to Kafka: {e}")
+                self.kafka_producer.produce(
+                    self.kafka_topic,
+                    json.dumps(data).encode("utf-8"),
+                    callback=self.on_delivery
+                )
+                self.kafka_producer.flush()
+            except Exception as e:
+                self.monitor.messages_failed.inc()
+                print(f"Error sending data to Kafka: {e}")
 
     def on_delivery(self, err, msg):
         if err is not None:
@@ -113,15 +126,16 @@ class DataPreprocessingMicroservice:
             print(f"Message delivered to {msg.topic()} [{msg.partition()}]")
 
     def store_in_mongodb(self, data):
-        try:
-            inserted_data = self.collection.insert_one(data)
-            print("Data stored in MongoDB")
-
-            # Convert ObjectId to string before using the data elsewhere
-            data["_id"] = str(inserted_data.inserted_id)
-            
-        except Exception as e:
-            print(f"Error storing data in MongoDB: {e}")
+        with self.monitor.db_query_latency.time():
+            try:
+                self.monitor.db_connections.inc()
+                inserted_data = self.collection.insert_one(data)
+                data["_id"] = str(inserted_data.inserted_id)
+            except Exception as e:
+                self.monitor.messages_failed.inc()
+                print(f"Error storing data in MongoDB: {e}")
+            finally:
+                self.monitor.db_connections.dec()
 
     def run(self):
         print(f"Starting Data Preprocessing Microservice, listening on {self.mqtt_topic}...")
@@ -131,4 +145,3 @@ class DataPreprocessingMicroservice:
 if __name__ == "__main__":
     service = DataPreprocessingMicroservice()
     service.run()
-    

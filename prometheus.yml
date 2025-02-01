@@ -1,0 +1,23 @@
+global:
+  scrape_interval: 15s # Default scrape interval
+
+scrape_configs:
+  - job_name: "preprocessor"
+    static_configs:
+      - targets: ["localhost:8002"]
+    scrape_interval: 5s
+
+  - job_name: "db_interface"
+    static_configs:
+      - targets: ["localhost:8003"]
+    scrape_interval: 5s
+
+  - job_name: "api_gateway"
+    static_configs:
+      - targets: ["localhost:8004"]
+    scrape_interval: 5s
+
+  - job_name: "anomaly_detector"
+    static_configs:
+      - targets: ["localhost:8006"]
+    scrape_interval: 5s
