@@ -1,10 +1,11 @@
-import requests
+import asyncio
+import aiohttp
 import tkinter as tk
 from tkinter import ttk, messagebox
-from threading import Thread
 import time
+from datetime import datetime
 
-def get_plc_data(base_url, plc_id=None, hours=1, variable=None):
+async def get_plc_data(base_url, plc_id=None, hours=1, variable=None):
     """
     Fetch PLC data with optional filters.
 
@@ -14,33 +15,51 @@ def get_plc_data(base_url, plc_id=None, hours=1, variable=None):
     :param variable: Specific variable to retrieve (optional).
     :return: List of PLC data entries.
     """
-    params = {
-        "plc_id": plc_id,
-        "hours": hours,
-        "variable": variable,
-    }
-    response = requests.get(f"{base_url}/plc/data", params={k: v for k, v in params.items() if v is not None})
-    if response.status_code == 200:
-        return response.json()
-    else:
-        messagebox.showerror("Error", f"Failed to fetch PLC data: {response.status_code}, {response.text}")
+    try:
+        params = {
+            "plc_id": plc_id,
+            "hours": hours,
+            "variable": variable,
+        }
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"{base_url}/plc/data", params={k: v for k, v in params.items() if v is not None}) as response:
+                response.raise_for_status()
+                return await response.json()
+    except aiohttp.ClientError as e:
+        messagebox.showerror("Error", f"Failed to fetch PLC data: {e}")
         return []
 
-def get_plc_variables(base_url):
+async def get_plc_variables(base_url):
     """
     Retrieve the list of available PLC variables.
 
     :param base_url: Base URL of the API.
     :return: List of variable names.
     """
-    response = requests.get(f"{base_url}/plc/variables")
-    if response.status_code == 200:
-        return response.json()
-    else:
-        messagebox.showerror("Error", f"Failed to fetch PLC variables: {response.status_code}, {response.text}")
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"{base_url}/plc/variables") as response:
+                response.raise_for_status()
+                return await response.json()
+    except aiohttp.ClientError as e:
+        messagebox.showerror("Error", f"Failed to fetch PLC variables: {e}")
         return []
 
-def fetch_data():
+def format_plc_data(data):
+    formatted_data = ""
+    for entry in data:
+        formatted_data += f"PLC ID: {entry['plc_id']}\n"
+        formatted_data += f"Timestamp: {datetime.fromtimestamp(entry['timestamp']).strftime('%Y-%m-%d %H:%M:%S')}\n"
+        formatted_data += "Variables:\n"
+        for var, details in entry['variables'].items():
+            formatted_data += f"  {var}:\n"
+            formatted_data += f"    Value: {details['value']} {details['unit']}\n"
+            formatted_data += f"    Normalized: {details['normalized']}\n"
+        formatted_data += f"Stored At: {entry['stored_at']}\n"
+        formatted_data += "-" * 40 + "\n"
+    return formatted_data
+
+async def fetch_data():
     base_url = base_url_entry.get()
     plc_id = plc_id_entry.get()
     hours = hours_entry.get()
@@ -52,30 +71,35 @@ def fetch_data():
         messagebox.showerror("Input Error", "Hours must be a number.")
         return
 
-    data = get_plc_data(base_url, plc_id, hours, variable)
+    data = await get_plc_data(base_url, plc_id, hours, variable)
+    formatted_data = format_plc_data(data)
     result_text.delete(1.0, tk.END)
-    result_text.insert(tk.END, data)
+    result_text.insert(tk.END, formatted_data)
 
-def fetch_variables():
+async def fetch_variables():
     base_url = base_url_entry.get()
-    variables = get_plc_variables(base_url)
+    start_time = time.time()
+    variables = await get_plc_variables(base_url)
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+
     result_text.delete(1.0, tk.END)
     result_text.insert(tk.END, variables)
+    result_text.insert(tk.END, f"\nTime taken: {elapsed_time:.2f} seconds")
 
 def start_live_feed():
     base_url = base_url_entry.get()
     plc_id = plc_id_entry.get()
     variable = variable_entry.get()
 
-    def live_feed():
-        while live_feed_running.get():
-            data = get_plc_data(base_url, plc_id, hours=1, variable=variable)
+    async def live_feed():
+        if live_feed_running.get():
+            data = await get_plc_data(base_url, plc_id, hours=1, variable=variable)
             result_text.delete(1.0, tk.END)
             result_text.insert(tk.END, data)
-            time.sleep(5)  # Update every 5 seconds
+            root.after(5000, lambda: asyncio.run(live_feed()))  # Schedule the next update in 5 seconds
 
-    live_thread = Thread(target=live_feed, daemon=True)
-    live_thread.start()
+    asyncio.run(live_feed())
 
 def stop_live_feed():
     live_feed_running.set(False)
@@ -91,6 +115,7 @@ main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
 base_url_label = ttk.Label(main_frame, text="Base URL:")
 base_url_label.grid(row=0, column=0, sticky=tk.W)
 base_url_entry = ttk.Entry(main_frame, width=50)
+base_url_entry.insert(0, "http://localhost:8000")  # Prepopulate with localhost and FastAPI port
 base_url_entry.grid(row=0, column=1, sticky=(tk.W, tk.E))
 
 # PLC ID Entry
@@ -112,10 +137,10 @@ variable_entry = ttk.Entry(main_frame, width=50)
 variable_entry.grid(row=3, column=1, sticky=(tk.W, tk.E))
 
 # Buttons
-fetch_data_button = ttk.Button(main_frame, text="Fetch Data", command=fetch_data)
+fetch_data_button = ttk.Button(main_frame, text="Fetch Data", command=lambda: asyncio.run(fetch_data()))
 fetch_data_button.grid(row=4, column=0, sticky=(tk.W, tk.E))
 
-fetch_variables_button = ttk.Button(main_frame, text="Fetch Variables", command=fetch_variables)
+fetch_variables_button = ttk.Button(main_frame, text="Fetch Variables", command=lambda: asyncio.run(fetch_variables()))
 fetch_variables_button.grid(row=4, column=1, sticky=(tk.W, tk.E))
 
 live_feed_running = tk.BooleanVar(value=False)

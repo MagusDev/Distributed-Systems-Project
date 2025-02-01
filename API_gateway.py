@@ -154,27 +154,25 @@ async def delete_client(client_id: str, db = Depends(get_db)):
 @app.get("/plc/data")
 async def get_plc_data(
     plc_id: Optional[str] = None,
-    hours: Optional[int] = 1,
     variable: Optional[str] = None,
     db = Depends(get_db)
 ) -> List[Dict]:
     """
-    Get PLC data with optional filtering
+    Get the latest PLC data for each PLC with optional filtering
     """
-    query = {}
-    if plc_id:
-        query['plc_id'] = plc_id
-    if hours:
-        query['timestamp'] = {
-            '$gte': time.time() - (hours * 3600)
-        }
-
-    projection = {'_id': 0}
+    pipeline = [
+        {"$sort": {"timestamp": -1}},
+        {"$group": {
+            "_id": "$plc_id",
+            "latest_data": {"$first": "$$ROOT"}
+        }},
+        {"$replaceRoot": {"newRoot": "$latest_data"}}
+    ]
     
-    data = list(db.plc_data.find(
-        query,
-        projection
-    ).sort('timestamp', -1))
+    if plc_id:
+        pipeline.insert(0, {"$match": {"plc_id": plc_id}})
+    
+    data = list(db.plc_data.aggregate(pipeline))
     
     if variable and data:
         for entry in data:
@@ -182,6 +180,10 @@ async def get_plc_data(
                 entry['variables'] = {
                     variable: entry['variables'][variable]
                 }
+    
+    # Convert ObjectId to string
+    for entry in data:
+        entry['_id'] = str(entry['_id'])
     
     return data
 
@@ -199,4 +201,4 @@ async def get_plc_variables(db = Depends(get_db)) -> List[str]:
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+    uvicorn.run(app, host="0.0.0.0", port=8000)
