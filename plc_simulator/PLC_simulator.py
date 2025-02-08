@@ -27,14 +27,14 @@ class PLCSimulator:
             'oil_temperature': (20.0, 95.0)
         }
         
-        # Set up MQTT client
-        self.mqtt_client = mqtt.Client()
+        # Set up MQTT client with protocol version 5
+        self.mqtt_client = mqtt.Client(protocol=mqtt.MQTTv5)
 
         # Set callback functions for debugging
         self.mqtt_client.on_connect = self.on_connect
         self.mqtt_client.on_disconnect = self.on_disconnect
         
-        self.mqtt_client.connect(self.mqtt_broker, self.mqtt_port, 60)
+        # Don't connect in __init__, move to run()
 
     def on_connect(self, client, userdata, flags, rc):
         """Handle the connection event"""
@@ -80,6 +80,18 @@ class PLCSimulator:
 
     def run(self):
         print(f"Starting MQTT PLC simulation, publishing to {self.mqtt_topic}...")
+        print(f"Connecting to MQTT broker at {self.mqtt_broker}:{self.mqtt_port}")
+        
+        while True:
+            try:
+                # Try to connect to MQTT broker
+                self.mqtt_client.connect(self.mqtt_broker, self.mqtt_port, 60)
+                break
+            except Exception as e:
+                print(f"Failed to connect to MQTT broker: {e}")
+                print("Retrying in 5 seconds...")
+                time.sleep(5)
+
         while True:
             try:
                 plc_data = self.simulate_process()
@@ -97,12 +109,8 @@ class PLCSimulator:
 
 
 if __name__ == "__main__":
-    # Use the Docker host IP if running on a different machine
-    # mqtt_broker = "your_docker_host_ip"
-    
-    # If running on the same machine as Docker, use localhost
-    mqtt_broker = "localhost"
+    # Use the service name as defined in docker-compose
+    mqtt_broker = "mqtt"
     
     plc = PLCSimulator(mqtt_broker=mqtt_broker)
     plc.run()
-    

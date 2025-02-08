@@ -1,0 +1,6 @@
+confluent_kafka
+pandas
+numpy
+scipy
+prometheus_client
+psutil

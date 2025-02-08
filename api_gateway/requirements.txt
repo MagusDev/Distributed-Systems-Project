@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+pymongo
+prometheus_client
+pydantic
+typing-extensions
+psutil

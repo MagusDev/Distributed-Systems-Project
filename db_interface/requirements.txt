@@ -1,0 +1,5 @@
+confluent_kafka
+pymongo
+prometheus_client
+datetime
+psutil
