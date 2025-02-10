@@ -1,7 +1,8 @@
 fastapi
 uvicorn
 pymongo
-prometheus_client
+prometheus-client
+requests
 pydantic
 typing-extensions
 psutil

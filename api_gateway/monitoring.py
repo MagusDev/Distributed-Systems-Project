@@ -10,8 +10,7 @@ class ServiceMonitor:
         self.request_latency = Histogram(
             f'{service_name}_request_latency_seconds',
             'Request latency in seconds',
-            ['operation'],  # Add label for operation type
-            buckets=(0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0)
+            ['method', 'endpoint']  # Add labels for method and endpoint
         )
         
         # Message throughput with labels
@@ -29,12 +28,11 @@ class ServiceMonitor:
         # Database metrics
         self.db_query_latency = Histogram(
             f'{service_name}_db_query_latency_seconds',
-            'Database query latency in seconds',
-            buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25)
+            'Database query latency in seconds'
         )
         self.db_connections = Gauge(
-            f'{service_name}_db_connections_active',
-            'Number of active database connections'
+            f'{service_name}_db_connections_current',
+            'Number of current database connections'
         )
         
         # System metrics
@@ -68,13 +66,10 @@ class ServiceMonitor:
 
     @contextmanager
     def track_request(self):
-        start_time = time.time()
-        self.requests_in_progress.inc()
         try:
             yield
         finally:
-            self.requests_in_progress.dec()
-            self.request_latency.observe(time.time() - start_time)
+            pass  # Request tracking is now handled by the middleware
 
     @contextmanager
     def track_db_query(self):

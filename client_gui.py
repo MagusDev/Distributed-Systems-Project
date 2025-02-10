@@ -16,15 +16,18 @@ async def get_plc_data(base_url, plc_id=None, hours=1, variable=None):
     :return: List of PLC data entries.
     """
     try:
-        params = {
-            "plc_id": plc_id,
-            "hours": hours,
-            "variable": variable,
-        }
+        params = {}
+        if plc_id:
+            params["plc_id"] = plc_id
+        if variable:
+            params["variable"] = variable
+
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"{base_url}/plc/data", params={k: v for k, v in params.items() if v is not None}) as response:
+            async with session.get(f"{base_url}/plc/data", params=params) as response:
                 response.raise_for_status()
-                return await response.json()
+                data = await response.json()
+                print(f"Raw API Response: {data}")  # Debug print
+                return data
     except aiohttp.ClientError as e:
         messagebox.showerror("Error", f"Failed to fetch PLC data: {e}")
         return []
@@ -46,35 +49,69 @@ async def get_plc_variables(base_url):
         return []
 
 def format_plc_data(data):
-    formatted_data = ""
-    for entry in data:
-        formatted_data += f"PLC ID: {entry['plc_id']}\n"
-        formatted_data += f"Timestamp: {datetime.fromtimestamp(entry['timestamp']).strftime('%Y-%m-%d %H:%M:%S')}\n"
-        formatted_data += "Variables:\n"
-        for var, details in entry['variables'].items():
-            formatted_data += f"  {var}:\n"
-            formatted_data += f"    Value: {details['value']} {details['unit']}\n"
-            formatted_data += f"    Normalized: {details['normalized']}\n"
-        formatted_data += f"Stored At: {entry['stored_at']}\n"
-        formatted_data += "-" * 40 + "\n"
-    return formatted_data
+    try:
+        if not data:
+            return "No data available"
+
+        formatted_data = ""
+        for entry in data:
+            # Record ID and PLC ID
+            if '_id' in entry:
+                formatted_data += f"Record ID: {entry['_id']}\n"
+            formatted_data += f"PLC ID: {entry.get('plc_id', 'Unknown')}\n"
+            
+            # Timestamp
+            try:
+                timestamp = datetime.fromtimestamp(entry.get('timestamp', 0))
+                formatted_data += f"Timestamp: {timestamp.strftime('%Y-%m-%d %H:%M:%S')}\n"
+            except Exception as e:
+                formatted_data += f"Timestamp: Invalid\n"
+                print(f"Error formatting timestamp: {e}")
+
+            # Variables
+            formatted_data += "Variables:\n"
+            variables = entry.get('variables', {})
+            for var_name, var_data in variables.items():
+                formatted_data += f"  {var_name}:\n"
+                if isinstance(var_data, dict):
+                    # Value and unit
+                    if 'value' in var_data:
+                        formatted_data += f"    Value: {var_data['value']}"
+                        if 'unit' in var_data:
+                            formatted_data += f" {var_data['unit']}"
+                        formatted_data += "\n"
+                    # Normalized value
+                    if 'normalized' in var_data:
+                        formatted_data += f"    Normalized: {var_data['normalized']:.4f}\n"
+                else:
+                    # Handle case where var_data is not a dictionary
+                    formatted_data += f"    Value: {var_data}\n"
+
+            formatted_data += "-" * 40 + "\n"
+        
+        return formatted_data
+
+    except Exception as e:
+        error_msg = f"Error formatting data: {str(e)}\nRaw data: {data}"
+        print(error_msg)  # Debug print
+        return error_msg
 
 async def fetch_data():
-    base_url = base_url_entry.get()
-    plc_id = plc_id_entry.get()
-    hours = hours_entry.get()
-    variable = variable_entry.get()
-
     try:
-        hours = int(hours) if hours else 1
-    except ValueError:
-        messagebox.showerror("Input Error", "Hours must be a number.")
-        return
+        base_url = base_url_entry.get()
+        plc_id = plc_id_entry.get() or None
+        variable = variable_entry.get() or None
 
-    data = await get_plc_data(base_url, plc_id, hours, variable)
-    formatted_data = format_plc_data(data)
-    result_text.delete(1.0, tk.END)
-    result_text.insert(tk.END, formatted_data)
+        data = await get_plc_data(base_url, plc_id, None, variable)
+        formatted_data = format_plc_data(data)
+        
+        result_text.delete(1.0, tk.END)
+        result_text.insert(tk.END, formatted_data)
+    except Exception as e:
+        error_msg = f"Error fetching data: {str(e)}"
+        print(error_msg)  # Debug print
+        result_text.delete(1.0, tk.END)
+        result_text.insert(tk.END, error_msg)
 
 async def fetch_variables():
     base_url = base_url_entry.get()
@@ -87,19 +124,27 @@ async def fetch_variables():
     result_text.insert(tk.END, variables)
     result_text.insert(tk.END, f"\nTime taken: {elapsed_time:.2f} seconds")
 
-def start_live_feed():
-    base_url = base_url_entry.get()
-    plc_id = plc_id_entry.get()
-    variable = variable_entry.get()
-
-    async def live_feed():
-        if live_feed_running.get():
-            data = await get_plc_data(base_url, plc_id, hours=1, variable=variable)
+async def live_feed_update():
+    if live_feed_running.get():
+        try:
+            data = await get_plc_data(
+                base_url_entry.get(),
+                plc_id_entry.get() or None,
+                None,
+                variable_entry.get() or None
+            )
+            formatted_data = format_plc_data(data)
             result_text.delete(1.0, tk.END)
-            result_text.insert(tk.END, data)
-            root.after(5000, lambda: asyncio.run(live_feed()))  # Schedule the next update in 5 seconds
+            result_text.insert(tk.END, formatted_data)
+        except Exception as e:
+            print(f"Live feed error: {e}")
+        finally:
+            if live_feed_running.get():
+                root.after(5000, lambda: asyncio.run(live_feed_update()))
 
-    asyncio.run(live_feed())
+def start_live_feed():
+    live_feed_running.set(True)
+    asyncio.run(live_feed_update())
 
 def stop_live_feed():
     live_feed_running.set(False)

@@ -8,11 +8,21 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - mongodb
-      - kafka
+      mongodb:
+        condition: service_started
+      kafka:
+        condition: service_started
     environment:
       - MONGO_URI=mongodb://mongodb:27017/
       - KAFKA_BROKER=kafka:9092
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
   preprocessor:
     build:
@@ -87,12 +97,8 @@ services:
       zookeeper:
         condition: service_healthy
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "kafka-topics.sh --bootstrap-server localhost:9092 --list",
-        ]
-      interval: 30s      docker-compose down -v
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      interval: 30s
       timeout: 10s
       retries: 3
       start_period: 15s
