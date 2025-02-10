@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   api_gateway:
@@ -54,9 +54,13 @@ services:
       - KAFKA_BROKER=kafka:9092
 
   mqtt:
-    image: eclipse-mosquitto
+    image: eclipse-mosquitto:2.0.14
     ports:
       - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+    restart: always
 
   kafka:
     image: confluentinc/cp-kafka:latest
