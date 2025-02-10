@@ -3,11 +3,12 @@ import random
 import json
 import uuid
 import paho.mqtt.client as mqtt
+import os
 
 class PLCSimulator:
-    def __init__(self, mqtt_broker="localhost", mqtt_port=1883, mqtt_topic="plc/data"):
+    def __init__(self, mqtt_broker=None, mqtt_port=1883, mqtt_topic="plc/data"):
         self.plc_id = str(uuid.uuid4())
-        self.mqtt_broker = mqtt_broker
+        self.mqtt_broker = mqtt_broker or os.getenv('MQTT_BROKER', 'localhost')
         self.mqtt_port = mqtt_port
         self.mqtt_topic = mqtt_topic
         
@@ -36,8 +37,8 @@ class PLCSimulator:
         
         # Don't connect in __init__, move to run()
 
-    def on_connect(self, client, userdata, flags, rc):
-        """Handle the connection event"""
+    def on_connect(self, client, userdata, flags, rc, properties=None):
+        """Handle the connection event with MQTTv5"""
         print(f"Connected to MQTT broker with result code {rc}")
         if rc != 0:
             print(f"Failed to connect with code {rc}")
@@ -109,8 +110,5 @@ class PLCSimulator:
 
 
 if __name__ == "__main__":
-    # Use the service name as defined in docker-compose
-    mqtt_broker = "mqtt"
-    
-    plc = PLCSimulator(mqtt_broker=mqtt_broker)
+    plc = PLCSimulator()
     plc.run()

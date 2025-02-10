@@ -5,45 +5,56 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 from monitoring import ServiceMonitor
 import time
+import socket
+import os
 
 class DataPreprocessingMicroservice:
-    def __init__(self, mqtt_broker="localhost", mqtt_port=1883, mqtt_topic="plc/data",
-                 kafka_broker="localhost:9092", kafka_topic="plc_data",
-                 mongo_uri="mongodb://localhost:27017/", mongo_db="plc_data_db",
+    def __init__(self, mqtt_broker=None, mqtt_port=1883, mqtt_topic="plc/data",
+                 kafka_broker=None, kafka_topic="plc_data",
+                 mongo_uri=None, mongo_db="plc_data_db",
                  metrics_port=8002):
         # Initialize monitoring
         self.monitor = ServiceMonitor('preprocessor', metrics_port)
-        # MQTT Configuration
-        self.mqtt_broker = mqtt_broker
+        
+        # Get connection details from environment variables
+        self.mqtt_broker = mqtt_broker or os.getenv('MQTT_BROKER', 'mqtt')  # Use Docker service name
         self.mqtt_port = mqtt_port
         self.mqtt_topic = mqtt_topic
 
-        # Kafka Configuration
-        self.kafka_broker = kafka_broker
+        self.kafka_broker = kafka_broker or os.getenv('KAFKA_BROKER', 'kafka:9092')  # Use Docker service name
         self.kafka_topic = kafka_topic
 
-        # MongoDB Configuration
-        self.mongo_uri = mongo_uri
+        self.mongo_uri = mongo_uri or os.getenv('MONGO_URI', 'mongodb://mongodb:27017/')  # Use Docker service name
         self.mongo_db = mongo_db
 
-        # Set up MQTT Client
-        self.mqtt_client = mqtt.Client()
+        # Set up MQTT Client with protocol version 5
+        self.mqtt_client = mqtt.Client(protocol=mqtt.MQTTv5)
         self.mqtt_client.on_connect = self.on_connect
         self.mqtt_client.on_message = self.on_message
+        self.mqtt_client.on_disconnect = self.on_disconnect  # Add disconnect handler
 
-        # Set up Kafka Producer
+        # Set up Kafka Producer with error handling
         self.kafka_producer = Producer({
-            'bootstrap.servers': self.kafka_broker
+            'bootstrap.servers': self.kafka_broker,
+            'socket.timeout.ms': 10000,  # 10 seconds timeout
+            'message.timeout.ms': 10000
         })
 
-        # Set up MongoDB Client
-        self.mongo_client = MongoClient(self.mongo_uri)
+        # Set up MongoDB Client with timeout
+        self.mongo_client = MongoClient(self.mongo_uri, serverSelectionTimeoutMS=10000)
         self.db = self.mongo_client[self.mongo_db]
         self.collection = self.db["processed_data"]
 
-    def on_connect(self, client, userdata, flags, rc):
+    def on_connect(self, client, userdata, flags, rc, properties=None):
+        """Handle connection with MQTTv5"""
         print("Connected to MQTT broker with result code", rc)
         client.subscribe(self.mqtt_topic)
+
+    def on_disconnect(self, client, userdata, rc):
+        """Handle MQTT disconnect events"""
+        print(f"Disconnected from MQTT broker with result code {rc}")
+        if rc != 0:
+            print("Unexpected disconnection. Will attempt to reconnect...")
 
     def on_message(self, client, userdata, msg):
         with self.monitor.request_latency.labels(operation='process_message').time():
@@ -53,7 +64,24 @@ class DataPreprocessingMicroservice:
                 
                 # Decode and process the incoming MQTT message
                 data = json.loads(msg.payload.decode("utf-8"))
+                print("\n=== Received MQTT Message ===")
+                print(f"Topic: {msg.topic}")
+                print(f"PLC ID: {data.get('plc_id', 'unknown')}")
+                print(f"Timestamp: {data.get('timestamp', 0)}")
+                print("Input Variables:")
+                for var_name, var_data in data.get('variables', {}).items():
+                    print(f"  {var_name}: {var_data.get('value')} {var_data.get('unit', '')}")
+                
                 processed_data = self.process_data(data)
+
+                print("\n=== Processed Data ===")
+                print(f"PLC ID: {processed_data['plc_id']}")
+                print("Processed Variables:")
+                for var_name, var_data in processed_data['variables'].items():
+                    print(f"  {var_name}:")
+                    print(f"    Value: {var_data.get('value')} {var_data.get('unit', '')}")
+                    print(f"    Normalized: {var_data.get('normalized')}")
+                print("==================\n")
 
                 # Track message size
                 self.monitor.request_size.observe(len(msg.payload))
@@ -138,9 +166,43 @@ class DataPreprocessingMicroservice:
                 self.monitor.db_connections.dec()
 
     def run(self):
-        print(f"Starting Data Preprocessing Microservice, listening on {self.mqtt_topic}...")
-        self.mqtt_client.connect(self.mqtt_broker, self.mqtt_port, 60)
-        self.mqtt_client.loop_forever()
+        print(f"Starting Data Preprocessing Microservice...")
+        print(f"MQTT Broker: {self.mqtt_broker}:{self.mqtt_port}")
+        print(f"Kafka Broker: {self.kafka_broker}")
+        print(f"MongoDB URI: {self.mongo_uri}")
+        
+        max_retries = 5
+        retry_delay = 1
+
+        # Test MongoDB connection
+        try:
+            self.mongo_client.server_info()
+            print("Successfully connected to MongoDB")
+        except Exception as e:
+            print(f"Failed to connect to MongoDB: {e}")
+
+        # Test Kafka connection
+        try:
+            self.kafka_producer.list_topics(timeout=10)
+            print("Successfully connected to Kafka")
+        except Exception as e:
+            print(f"Failed to connect to Kafka: {e}")
+
+        for attempt in range(max_retries):
+            try:
+                print(f"Attempting to connect to MQTT broker (Attempt {attempt + 1}/{max_retries})")
+                self.mqtt_client.connect(self.mqtt_broker, self.mqtt_port, 60)
+                print("Successfully connected to MQTT broker")
+                self.mqtt_client.loop_forever()
+                break
+            except (socket.error, ConnectionRefusedError) as e:
+                print(f"Connection attempt {attempt + 1} failed: {e}")
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay)
+                    retry_delay *= 2
+                else:
+                    print("Max retries reached. Exiting.")
+                    break
 
 if __name__ == "__main__":
     service = DataPreprocessingMicroservice()

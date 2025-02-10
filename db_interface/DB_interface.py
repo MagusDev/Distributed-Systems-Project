@@ -4,12 +4,13 @@ from confluent_kafka import Consumer
 from pymongo import MongoClient
 from datetime import datetime
 from monitoring import ServiceMonitor
+import os
 
 class DataStorage:
-    def __init__(self, kafka_broker='localhost:9092', mongo_uri='mongodb://localhost:27017/', metrics_port=8003):
+    def __init__(self, kafka_broker=None, mongo_uri=None, metrics_port=8003):
         self.monitor = ServiceMonitor('db_interface', metrics_port)
-        self.kafka_broker = kafka_broker
-        self.mongo_uri = mongo_uri
+        self.kafka_broker = kafka_broker or os.getenv('KAFKA_BROKER', 'localhost:9092')
+        self.mongo_uri = mongo_uri or os.getenv('MONGO_URI', 'mongodb://localhost:27017/')
 
         # Set up Kafka Consumer
         self.consumer = Consumer({
