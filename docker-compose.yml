@@ -1,4 +1,4 @@
-version: "3.8"
+#version: "3.8"
 
 services:
   api_gateway:
@@ -16,7 +16,8 @@ services:
       - MONGO_URI=mongodb://mongodb:27017/
       - KAFKA_BROKER=kafka:9092
       - PYTHONUNBUFFERED=1
-    restart: unless-stopped
+    restart: always
+    #restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -92,7 +93,8 @@ services:
       KAFKA_LOG_DIRS: /var/lib/kafka/data
     volumes:
       - kafka_data:/var/lib/kafka/data
-    restart: unless-stopped
+    restart: always
+    #restart: unless-stopped
     depends_on:
       zookeeper:
         condition: service_healthy
@@ -115,7 +117,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-    restart: unless-stopped
+    restart: always
+    #restart: unless-stopped
 
   mongodb:
     image: mongo:latest
@@ -123,6 +126,8 @@ services:
       - "27017:27017"
 
   plc_simulator:
+    ports:
+        - "8080:8080"
     build:
       context: ./plc_simulator
       dockerfile: Dockerfile
