@@ -28,9 +28,6 @@ class AnomalyDetectionService:
         self.monitor.messages_total.labels(type='anomaly').inc(0)  # Initialize anomaly messages
         self.monitor.request_latency.labels(operation='detect')  # Initialize detection latency
 
-        # Start Prometheus metrics server
-        start_http_server(metrics_port)
-
     def consume_message(self):
         """Consume and process messages from Kafka"""
         try:
@@ -82,7 +79,7 @@ class AnomalyDetectionService:
 
     def process_data(self, msg_value):
         """Process the incoming PLC data"""
-        with self.monitor.track_request():
+        with self.monitor.track_request(operation='process_plc_data'):  # Specify the operation
             try:
                 self.monitor.messages_total.labels(type='normal').inc()
                 self.monitor.requests_in_progress.inc()
@@ -127,7 +124,7 @@ class AnomalyDetectionService:
 if __name__ == "__main__":
     # Kafka configuration for the consumer
     kafka_config = {
-        'bootstrap.servers': 'localhost:9092',  # Adjust the Kafka broker address
+        'bootstrap.servers': 'kafka:9092',  # Updated to use docker service name
         'group.id': 'anomaly-detection-group',
         'auto.offset.reset': 'earliest',  # Start reading from the beginning of the topic
     }

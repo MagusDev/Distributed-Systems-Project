@@ -67,14 +67,14 @@ class ServiceMonitor:
         self._start_resource_monitoring()
 
     @contextmanager
-    def track_request(self):
+    def track_request(self, operation='process'):  # Add operation parameter with default value
         start_time = time.time()
         self.requests_in_progress.inc()
         try:
             yield
         finally:
             self.requests_in_progress.dec()
-            self.request_latency.observe(time.time() - start_time)
+            self.request_latency.labels(operation=operation).observe(time.time() - start_time)
 
     @contextmanager
     def track_db_query(self):
