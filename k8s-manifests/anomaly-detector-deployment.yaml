@@ -2,8 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    kompose.cmd: C:\Users\Walid\kompose.exe convert -o k8s-manifests
-    kompose.version: 1.35.0 (9532ceef3)
+    kompose.cmd: D:\Oulu\Distributed Systems\tools\kompose.exe convert -o k8s-manifests
+    kompose.version: 1.31.2 (a92241f79)
+  creationTimestamp: null
   labels:
     io.kompose.service: anomaly-detector
   name: anomaly-detector
@@ -12,12 +13,15 @@ spec:
   selector:
     matchLabels:
       io.kompose.service: anomaly-detector
+  strategy: {}
   template:
     metadata:
       annotations:
-        kompose.cmd: C:\Users\Walid\kompose.exe convert -o k8s-manifests
-        kompose.version: 1.35.0 (9532ceef3)
+        kompose.cmd: D:\Oulu\Distributed Systems\tools\kompose.exe convert -o k8s-manifests
+        kompose.version: 1.31.2 (a92241f79)
+      creationTimestamp: null
       labels:
+        io.kompose.network/distributedsystems-default: "true"
         io.kompose.service: anomaly-detector
     spec:
       containers:
@@ -25,8 +29,13 @@ spec:
             - name: KAFKA_BROKER
               value: kafka:9092
           image: anomaly-detector
+          imagePullPolicy: Never
           name: anomaly-detector
           ports:
             - containerPort: 8006
+              hostPort: 8006
               protocol: TCP
-      restartPolicy: OnFailure
+          resources: {}
+      restartPolicy: Always
+status: {}
+

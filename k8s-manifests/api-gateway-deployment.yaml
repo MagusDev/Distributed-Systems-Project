@@ -2,8 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    kompose.cmd: C:\Users\Walid\kompose.exe convert -o k8s-manifests
-    kompose.version: 1.35.0 (9532ceef3)
+    kompose.cmd: D:\Oulu\Distributed Systems\tools\kompose.exe convert -o k8s-manifests
+    kompose.version: 1.31.2 (a92241f79)
+  creationTimestamp: null
   labels:
     io.kompose.service: api-gateway
   name: api-gateway
@@ -12,12 +13,15 @@ spec:
   selector:
     matchLabels:
       io.kompose.service: api-gateway
+  strategy: {}
   template:
     metadata:
       annotations:
-        kompose.cmd: C:\Users\Walid\kompose.exe convert -o k8s-manifests
-        kompose.version: 1.35.0 (9532ceef3)
+        kompose.cmd: D:\Oulu\Distributed Systems\tools\kompose.exe convert -o k8s-manifests
+        kompose.version: 1.31.2 (a92241f79)
+      creationTimestamp: null
       labels:
+        io.kompose.network/distributedsystems-default: "true"
         io.kompose.service: api-gateway
     spec:
       containers:
@@ -29,6 +33,7 @@ spec:
             - name: PYTHONUNBUFFERED
               value: "1"
           image: api-gateway
+          imagePullPolicy: Never
           livenessProbe:
             exec:
               command:
@@ -42,5 +47,9 @@ spec:
           name: api-gateway
           ports:
             - containerPort: 8000
+              hostPort: 8000
               protocol: TCP
-      restartPolicy: OnFailure
+          resources: {}
+      restartPolicy: Always
+status: {}
+

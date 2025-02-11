@@ -2,8 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    kompose.cmd: C:\Users\Walid\kompose.exe convert -o k8s-manifests
-    kompose.version: 1.35.0 (9532ceef3)
+    kompose.cmd: D:\Oulu\Distributed Systems\tools\kompose.exe convert -o k8s-manifests
+    kompose.version: 1.31.2 (a92241f79)
+  creationTimestamp: null
   labels:
     io.kompose.service: db-interface
   name: db-interface
@@ -12,12 +13,15 @@ spec:
   selector:
     matchLabels:
       io.kompose.service: db-interface
+  strategy: {}
   template:
     metadata:
       annotations:
-        kompose.cmd: C:\Users\Walid\kompose.exe convert -o k8s-manifests
-        kompose.version: 1.35.0 (9532ceef3)
+        kompose.cmd: D:\Oulu\Distributed Systems\tools\kompose.exe convert -o k8s-manifests
+        kompose.version: 1.31.2 (a92241f79)
+      creationTimestamp: null
       labels:
+        io.kompose.network/distributedsystems-default: "true"
         io.kompose.service: db-interface
     spec:
       containers:
@@ -27,8 +31,13 @@ spec:
             - name: MONGO_URI
               value: mongodb://mongodb:27017/
           image: db-interface
+          imagePullPolicy: Never
           name: db-interface
           ports:
             - containerPort: 8003
+              hostPort: 8003
               protocol: TCP
-      restartPolicy: OnFailure
+          resources: {}
+      restartPolicy: Always
+status: {}
+

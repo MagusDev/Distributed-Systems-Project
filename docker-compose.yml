@@ -1,7 +1,7 @@
 #version: "3.8"
 
 services:
-  api_gateway:
+  api-gateway:
     build:
       context: ./api_gateway
       dockerfile: Dockerfile
@@ -40,7 +40,7 @@ services:
       - KAFKA_BROKER=kafka:9092
       - MQTT_BROKER=mqtt
 
-  db_interface:
+  db-interface:
     build:
       context: ./db_interface
       dockerfile: Dockerfile
@@ -53,12 +53,12 @@ services:
       - MONGO_URI=mongodb://mongodb:27017/
       - KAFKA_BROKER=kafka:9092
 
-  anomaly_detector:
+  anomaly-detector:
     build:
       context: ./anomaly_detector
       dockerfile: Dockerfile
     ports:
-      - "8006:8006" 
+      - "8006:8006"
     depends_on:
       - kafka
     environment:
@@ -99,7 +99,11 @@ services:
       zookeeper:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      test:
+        [
+          "CMD-SHELL",
+          "kafka-topics.sh --bootstrap-server localhost:9092 --list",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -125,9 +129,9 @@ services:
     ports:
       - "27017:27017"
 
-  plc_simulator:
+  plc-simulator:
     ports:
-        - "8080:8080"
+      - "8080:8080"
     build:
       context: ./plc_simulator
       dockerfile: Dockerfile

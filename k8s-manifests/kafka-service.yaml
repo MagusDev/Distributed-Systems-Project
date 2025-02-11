@@ -2,8 +2,9 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    kompose.cmd: C:\Users\Walid\kompose.exe convert -o k8s-manifests
-    kompose.version: 1.35.0 (9532ceef3)
+    kompose.cmd: D:\Oulu\Distributed Systems\tools\kompose.exe convert -o k8s-manifests
+    kompose.version: 1.31.2 (a92241f79)
+  creationTimestamp: null
   labels:
     io.kompose.service: kafka
   name: kafka
@@ -14,3 +15,6 @@ spec:
       targetPort: 9092
   selector:
     io.kompose.service: kafka
+status:
+  loadBalancer: {}
+

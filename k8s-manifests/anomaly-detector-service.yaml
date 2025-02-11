@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: D:\Oulu\Distributed Systems\tools\kompose.exe convert -o k8s-manifests
+    kompose.version: 1.31.2 (a92241f79)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: anomaly-detector
+  name: anomaly-detector
+spec:
+  ports:
+    - name: "8006"
+      port: 8006
+      targetPort: 8006
+  selector:
+    io.kompose.service: anomaly-detector
+status:
+  loadBalancer: {}
+

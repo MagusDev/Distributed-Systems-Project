@@ -2,8 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    kompose.cmd: C:\Users\Walid\kompose.exe convert -o k8s-manifests
-    kompose.version: 1.35.0 (9532ceef3)
+    kompose.cmd: D:\Oulu\Distributed Systems\tools\kompose.exe convert -o k8s-manifests
+    kompose.version: 1.31.2 (a92241f79)
+  creationTimestamp: null
   labels:
     io.kompose.service: plc-simulator
   name: plc-simulator
@@ -12,12 +13,15 @@ spec:
   selector:
     matchLabels:
       io.kompose.service: plc-simulator
+  strategy: {}
   template:
     metadata:
       annotations:
-        kompose.cmd: C:\Users\Walid\kompose.exe convert -o k8s-manifests
-        kompose.version: 1.35.0 (9532ceef3)
+        kompose.cmd: D:\Oulu\Distributed Systems\tools\kompose.exe convert -o k8s-manifests
+        kompose.version: 1.31.2 (a92241f79)
+      creationTimestamp: null
       labels:
+        io.kompose.network/distributedsystems-default: "true"
         io.kompose.service: plc-simulator
     spec:
       containers:
@@ -25,8 +29,13 @@ spec:
             - name: MQTT_BROKER
               value: mqtt
           image: plc-simulator
+          imagePullPolicy: Never
           name: plc-simulator
           ports:
             - containerPort: 8080
+              hostPort: 8080
               protocol: TCP
-      restartPolicy: OnFailure
+          resources: {}
+      restartPolicy: Always
+status: {}
+
