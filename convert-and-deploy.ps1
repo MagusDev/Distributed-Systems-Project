@@ -21,3 +21,5 @@ kubectl get pods
 
 Write-Host "Checking services..."
 kubectl get services
+
+minikube dashboard

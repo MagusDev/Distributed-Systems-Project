@@ -1,6 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  namespace: distributed-system
+metadata:
   annotations:
     kompose.cmd: C:\Users\Walid\kompose.exe convert -o k8s-manifests
     kompose.version: 1.35.0 (9532ceef3)
@@ -29,4 +31,6 @@ spec:
           ports:
             - containerPort: 8006
               protocol: TCP
-      restartPolicy: OnFailure
+      restartPolicy: Always
+      #restartPolicy: OnFailure
+
