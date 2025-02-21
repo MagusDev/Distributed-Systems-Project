@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   annotations:
     kompose.cmd: D:\Oulu\Distributed Systems\tools\kompose.exe convert -o k8s-manifests
-    kompose.version: 1.31.2 (a92241f79)
+    kompose.version: 1.26.0 (40646f47)
   creationTimestamp: null
   labels:
     io.kompose.service: zookeeper
@@ -18,7 +18,7 @@ spec:
     metadata:
       annotations:
         kompose.cmd: D:\Oulu\Distributed Systems\tools\kompose.exe convert -o k8s-manifests
-        kompose.version: 1.31.2 (a92241f79)
+        kompose.version: 1.26.0 (40646f47)
       creationTimestamp: null
       labels:
         io.kompose.network/distributedsystems-default: "true"
@@ -31,7 +31,6 @@ spec:
             - name: ZOOKEEPER_TICK_TIME
               value: "2000"
           image: confluentinc/cp-zookeeper:latest
-          imagePullPolicy: Never
           livenessProbe:
             exec:
               command:

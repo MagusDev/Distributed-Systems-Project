@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   annotations:
     kompose.cmd: D:\Oulu\Distributed Systems\tools\kompose.exe convert -o k8s-manifests
-    kompose.version: 1.31.2 (a92241f79)
+    kompose.version: 1.26.0 (40646f47)
   creationTimestamp: null
   labels:
     io.kompose.service: mongodb
@@ -18,7 +18,7 @@ spec:
     metadata:
       annotations:
         kompose.cmd: D:\Oulu\Distributed Systems\tools\kompose.exe convert -o k8s-manifests
-        kompose.version: 1.31.2 (a92241f79)
+        kompose.version: 1.26.0 (40646f47)
       creationTimestamp: null
       labels:
         io.kompose.network/distributedsystems-default: "true"
@@ -26,7 +26,6 @@ spec:
     spec:
       containers:
         - image: mongo:latest
-          imagePullPolicy: Never
           name: mongodb
           ports:
             - containerPort: 27017

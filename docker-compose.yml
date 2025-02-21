@@ -2,9 +2,7 @@
 
 services:
   api-gateway:
-    build:
-      context: ./api_gateway
-      dockerfile: Dockerfile
+    image: magusdev/api-gateway
     ports:
       - "8000:8000"
     depends_on:
@@ -17,7 +15,6 @@ services:
       - KAFKA_BROKER=kafka:9092
       - PYTHONUNBUFFERED=1
     restart: always
-    #restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -26,9 +23,7 @@ services:
       start_period: 15s
 
   preprocessor:
-    build:
-      context: ./mqtt_data_preprocessor
-      dockerfile: Dockerfile
+    image: magusdev/preprocessor
     ports:
       - "8002:8002"
     depends_on:
@@ -41,9 +36,7 @@ services:
       - MQTT_BROKER=mqtt
 
   db-interface:
-    build:
-      context: ./db_interface
-      dockerfile: Dockerfile
+    image: magusdev/db-interface
     ports:
       - "8003:8003"
     depends_on:
@@ -54,9 +47,7 @@ services:
       - KAFKA_BROKER=kafka:9092
 
   anomaly-detector:
-    build:
-      context: ./anomaly_detector
-      dockerfile: Dockerfile
+    image: magusdev/anomaly-detector
     ports:
       - "8006:8006"
     depends_on:
@@ -94,7 +85,6 @@ services:
     volumes:
       - kafka_data:/var/lib/kafka/data
     restart: always
-    #restart: unless-stopped
     depends_on:
       zookeeper:
         condition: service_healthy
@@ -122,7 +112,6 @@ services:
       timeout: 5s
       retries: 3
     restart: always
-    #restart: unless-stopped
 
   mongodb:
     image: mongo:latest
@@ -130,11 +119,9 @@ services:
       - "27017:27017"
 
   plc-simulator:
+    image: magusdev/plc-simulator
     ports:
       - "8080:8080"
-    build:
-      context: ./plc_simulator
-      dockerfile: Dockerfile
     depends_on:
       - mqtt
     environment:

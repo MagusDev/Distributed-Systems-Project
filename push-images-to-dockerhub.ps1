@@ -1,5 +1,5 @@
-# Set up Minikube's Docker environment
-minikube docker-env | Invoke-Expression
+# DockerHub username
+$username = "magusdev"
 
 # Define the list of services and their build contexts
 $services = @(
@@ -10,13 +10,18 @@ $services = @(
     @{ name = "plc-simulator"; context = "./plc_simulator" }
 )
 
-# Loop through each service and build the Docker image
+# Loop through each service, build the Docker image, and push to DockerHub
 foreach ($service in $services) {
+    $imageName = "$username/$($service.name)"
     Write-Host "Building Docker image for service: $($service.name)"
-    docker build -t $($service.name) $($service.context)
+    docker build -t $imageName $($service.context)
     Write-Host "Docker image for service $($service.name) built successfully."
+
+    Write-Host "Pushing Docker image to DockerHub: $imageName"
+    docker push $imageName
+    Write-Host "Docker image for service $($service.name) pushed to DockerHub successfully."
 }
 
-# Verify that the images are available in Minikube
-Write-Host "Listing Docker images in Minikube..."
+# Verify that the images are available on DockerHub
+Write-Host "Listing Docker images..."
 docker images
