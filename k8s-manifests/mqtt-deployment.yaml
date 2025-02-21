@@ -1,48 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  annotations:
-    kompose.cmd: D:\Oulu\Distributed Systems\tools\kompose.exe convert -o k8s-manifests
-    kompose.version: 1.26.0 (40646f47)
-  creationTimestamp: null
-  labels:
-    io.kompose.service: mqtt
-  name: mqtt
+  name: mosquitto
+  namespace: default
 spec:
   replicas: 1
   selector:
     matchLabels:
-      io.kompose.service: mqtt
-  strategy:
-    type: Recreate
+      app: mosquitto
   template:
     metadata:
-      annotations:
-        kompose.cmd: D:\Oulu\Distributed Systems\tools\kompose.exe convert -o k8s-manifests
-        kompose.version: 1.26.0 (40646f47)
-      creationTimestamp: null
       labels:
-        io.kompose.network/distributedsystems-default: "true"
-        io.kompose.service: mqtt
+        app: mosquitto
     spec:
       containers:
-        - image: eclipse-mosquitto:2.0.14
-          name: mqtt
+        - name: mosquitto
+          image: eclipse-mosquitto:2.0.15
           ports:
-            - containerPort: 1883
-              hostPort: 1883
-              protocol: TCP
-            - containerPort: 9001
-              hostPort: 9001
-              protocol: TCP
-          resources: {}
-          volumeMounts:
-            - mountPath: /mosquitto/config
-              name: mqtt-claim0
-      restartPolicy: Always
-      volumes:
-        - name: mqtt-claim0
-          persistentVolumeClaim:
-            claimName: mqtt-claim0
-status: {}
+            - containerPort: 1883 # MQTT default port
+
+
+
 

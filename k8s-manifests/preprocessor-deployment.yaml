@@ -39,6 +39,21 @@ spec:
               hostPort: 8002
               protocol: TCP
           resources: {}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8002
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8002
+            initialDelaySeconds: 30
+            periodSeconds: 10
       restartPolicy: Always
 status: {}
+
+
+
 
