@@ -3,7 +3,9 @@ import logging
 import numpy as np
 import pandas as pd
 from confluent_kafka import Consumer, KafkaException, KafkaError
-from scipy.stats import zscore
+from pyspark.sql import SparkSession
+from pyspark.ml.feature import VectorAssembler
+from pyspark.ml.clustering import KMeans
 from monitoring import ServiceMonitor
 from prometheus_client import start_http_server
 
@@ -19,6 +21,9 @@ class AnomalyDetectionService:
         # Initialize the Kafka consumer
         self.consumer = Consumer(self.kafka_config)
         self.consumer.subscribe([self.kafka_topic])
+
+        # Initialize Spark session
+        self.spark = SparkSession.builder.appName("AnomalyDetection").getOrCreate()
 
         # Initialize monitoring
         self.monitor = ServiceMonitor('anomaly_detector', metrics_port)
@@ -45,27 +50,24 @@ class AnomalyDetectionService:
             return None
 
     def detect_anomalies(self, data):
-        """Detect anomalies based on Z-score or IQR method"""
+        """Detect anomalies using Spark MLlib"""
         with self.monitor.request_latency.labels(operation='detect').time():
             try:
-                # Create a dataframe from the data for easy processing
-                df = pd.DataFrame(data)
+                # Create a Spark DataFrame from the data
+                df = self.spark.createDataFrame(data)
 
-                anomalies = []
-                
-                # Check if the data contains numeric columns to apply outlier detection
-                for column in df.columns:
-                    if df[column].dtype in ['float64', 'int64']:  # Only numeric columns
-                        # Z-score method for anomaly detection
-                        z_scores = zscore(df[column])
-                        outliers = np.where(np.abs(z_scores) > 3)  # Z-score > 3 means anomaly
-                        for index in outliers[0]:
-                            anomalies.append({
-                                'column': column,
-                                'value': df[column].iloc[index],
-                                'z_score': z_scores[index]
-                            })
-                
+                # Assemble features into a vector
+                assembler = VectorAssembler(inputCols=df.columns, outputCol="features")
+                df = assembler.transform(df)
+
+                # Use KMeans for clustering and anomaly detection
+                kmeans = KMeans().setK(2).setSeed(1)
+                model = kmeans.fit(df)
+                predictions = model.transform(df)
+
+                # Identify anomalies based on cluster distance
+                anomalies = predictions.filter(predictions.prediction == 1).collect()
+
                 # Track number of anomalies
                 if anomalies:
                     self.monitor.messages_total.labels(type='anomaly').inc(len(anomalies))

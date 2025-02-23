@@ -58,3 +58,7 @@ spec:
                 - "echo > /dev/tcp/localhost/9092"
             initialDelaySeconds: 30
             periodSeconds: 10
+
+
+
+
