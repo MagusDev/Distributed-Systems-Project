@@ -22,7 +22,7 @@ This guide explains how to deploy and test the system using Kubernetes, with spe
    minikube dashboard
    ```
 
-````
+
 
 2. **Apply Kubernetes Manifests**
 
@@ -110,8 +110,3 @@ When you're done testing, you can clean up resources:
 - **Kafka Cluster ID Mismatch**: Delete the PVC for Kafka (`kubectl delete pvc kafka-data`) before redeploying
 - **Missing ConfigMaps**: Create necessary ConfigMaps before deploying services
 - **Liveness Probe Failures**: Adjust probe parameters or ensure required utilities exist in containers
-
-```
-
-```
-````
