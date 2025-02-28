@@ -8,10 +8,8 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      mongodb:
-        condition: service_started
-      kafka:
-        condition: service_started
+      - mongodb
+      - kafka
     environment:
       - MONGO_URI=mongodb://mongodb:27017/
       - KAFKA_BROKER=kafka:9092
@@ -57,7 +55,7 @@ services:
       context: ./anomaly_detector
       dockerfile: Dockerfile
     ports:
-      - "8006:8006" 
+      - "8006:8006"
     depends_on:
       - kafka
     environment:
@@ -94,10 +92,14 @@ services:
       - kafka_data:/var/lib/kafka/data
     restart: unless-stopped
     depends_on:
-      zookeeper:
-        condition: service_healthy
+      - zookeeper
+
     healthcheck:
-      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      test:
+        [
+          "CMD-SHELL",
+          "kafka-topics.sh --bootstrap-server localhost:9092 --list",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: C:\Users\Mohammad\Tools\Kompose\kompose.exe convert -o k8s-manifests
+    kompose.version: 1.26.0 (40646f47)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: db-interface
+  name: db-interface
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: db-interface
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: C:\Users\Mohammad\Tools\Kompose\kompose.exe convert -o k8s-manifests
+        kompose.version: 1.26.0 (40646f47)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: db-interface
+    spec:
+      containers:
+        - env:
+            - name: KAFKA_BROKER
+              value: kafka:9092
+            - name: MONGO_URI
+              value: mongodb://mongodb:27017/
+          image: magusdev/db-interface:latest
+          name: db-interface
+          ports:
+            - containerPort: 8003
+          resources: {}
+      restartPolicy: Always
+status: {}
