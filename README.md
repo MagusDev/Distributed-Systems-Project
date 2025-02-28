@@ -172,4 +172,4 @@ Please follow standard Git workflow:
 
 ## License
 
-MIT
+This project is licensed under the [MIT License](LICENSE) - see the LICENSE file for details.
