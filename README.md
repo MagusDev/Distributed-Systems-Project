@@ -82,56 +82,7 @@ CMD ["python", "src/main.py"]
 
 ## Kubernetes Deployment
 
-### Converting from Docker Compose
-
-1. Use kompose to convert Docker Compose to Kubernetes manifests(lots of modifications needed after conversion for a healthy deployment, see "Common Issues and Solutions"):
-
-   ```bash
-   kompose convert -f docker-compose.yml -o k8s-manifests
-   ```
-
-2. Apply the generated manifests:
-   ```bash
-   kubectl apply -f k8s-manifests/
-   ```
-
-### Managing Kubernetes Resources
-
-- **Apply all resources**: `kubectl apply -f k8s-manifests/`
-- **Delete all resources**: `kubectl delete -f k8s-manifests/`
-- **Delete specific resource types**: `kubectl delete pods,deployments,services,pvc --all`
-- **View logs**: `kubectl logs -f deployment/api-gateway`
-- **Pod description**: `kubectl describe pod <pod-name>`
-
-### Configuration
-
-The system uses ConfigMaps for configuration. For example, the MQTT configuration:
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: mqtt-config
-data:
-  mosquitto.conf: |
-    listener 1883
-    allow_anonymous true
-    persistence false
-    log_dest stdout
-```
-
-### Common Issues and Solutions
-
-1. **Kafka Cluster ID Mismatch**:
-
-   - Solution: Delete the PVC for Kafka (`kubectl delete pvc kafka-data`) before redeploying
-
-2. **Missing ConfigMaps**:
-
-   - Solution: Create necessary ConfigMaps before deploying services (ex. for MQTT mosquitto)
-
-3. **Liveness Probe Failures**:
-   - Solution: Adjust probe parameters or ensure required utilities exist in containers (ex. kafka, zookeeeper, mqtt)
+For detailed instructions on deploying and running the system in Kubernetes with Minikube, see the [Kubernetes Deployment Guide](KUBERNETES.md).
 
 ## Module Details
 
