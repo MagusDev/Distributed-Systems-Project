@@ -2,105 +2,174 @@
 
 ## Description
 
-This project aims to implement a Distributed Supervisory Control and Data Acquisition (SCADA) system tailored for a smart factory. The system is divided into multiple modules, each addressing a specific functionality:
+This project implements a Distributed Supervisory Control and Data Acquisition (SCADA) system for a smart factory environment. The system is designed with a microservices architecture using various technologies for efficient data processing and monitoring.
 
-1. **gRPC-based server and client for calculations** (current module)
-2. **Database integration** with MongoDB using PyMongo and FastAPI (planned module)
-3. **Asynchronous messaging** using Kafka for real-time communication (upcoming module)
+Key components include:
 
-The repository currently includes:
+1. **API Gateway**: Central entry point handling HTTP requests and routing
+2. **MQTT Data Preprocessor**: Processes raw data from industrial devices
+3. **Database Interface**: Manages interactions with MongoDB
+4. **Anomaly Detector**: Monitors data streams for anomalous patterns
+5. **PLC Simulator**: Simulates Programmable Logic Controller data for testing
+6. **Supporting Infrastructure**: Kafka, MongoDB, MQTT broker, and Zookeeper
 
-- The server code to handle gRPC requests.
-- The client code to make gRPC calls to the server.
-- A `.proto` file defining the gRPC service and messages.
-- A FastAPI server with CRUD endpoints (database integration not yet implemented).
+## Architecture
+
+The system follows a message-driven microservices architecture:
+
+- **Data Flow**: PLC Simulator → MQTT → Preprocessor → Kafka → Consumers (DB Interface, Anomaly Detector)
+- **API Access**: External systems interact through the API Gateway
+- **Persistence**: MongoDB stores processed data and system configurations
+- **Messaging**: Kafka provides reliable message delivery between services
 
 ## Requirements
 
-- Python 3.x
-- [gRPC Tools](https://grpc.io/docs/languages/python/quickstart/)
-- Recommended: Conda for managing the environment
+- Docker and Docker Compose
+- Kubernetes cluster (for deployment)
+- kubectl CLI tool
+- kompose (for converting Docker Compose to Kubernetes manifests)
 
-## Installation
+## Local Development with Docker Compose
 
-1. Clone this repository to your local machine:
+### Setup and Installation
+
+1. Clone the repository:
 
    ```bash
    git clone <repository-url>
    cd <repository-folder>
    ```
 
-2. (Optional but recommended) Create a Conda environment and activate it:
+2. Start the services using Docker Compose:
 
    ```bash
-   conda create -n grpc_env python=3.x -y
-   conda activate grpc_env
+   docker-compose up -d
    ```
 
-3. Install the required Python packages:
-
+3. Monitor the logs:
    ```bash
-   pip install -r requirements.txt
+   docker-compose logs -f
    ```
 
-## Generating gRPC Server Files
+### Service Endpoints
 
-If you make changes to the `grpc_server.proto` file, you must regenerate the gRPC Python files. Run the following command from the root directory:
+- API Gateway: http://localhost:8000
+- MQTT Broker: localhost:1883 (MQTT), http://localhost:9001 (WebSocket)
+- MongoDB: localhost:27017
 
-```bash
-python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. grpc_server.proto
+## Containerization
+
+Each service has its own Dockerfile for containerization. Example structure:
+
+```
+service/
+├── Dockerfile
+├── requirements.txt
+└── src/
+    └── main.py
 ```
 
-This command generates two files:
+Example Dockerfile:
 
-- `grpc_server_pb2.py`: Contains the protocol buffer message classes.
-- `grpc_server_pb2_grpc.py`: Contains the gRPC service classes.
-
-## Usage
-
-### Running the gRPC Server and Client
-
-1. Start the gRPC server:
-
-   ```bash
-   python server.py
-   ```
-
-2. Use the gRPC client to make requests:
-
-   ```bash
-   python client.py
-   ```
-
-### Running the FastAPI Server
-
-The FastAPI server provides CRUD endpoints, but database integration is not yet implemented. Update the `db_service.py` file to provide the correct database URL before starting the server. Once updated, start the server using Uvicorn:
-
-```bash
-uvicorn db_service:app --reload
+```dockerfile
+FROM python:3.9-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+CMD ["python", "src/main.py"]
 ```
 
-Visit the FastAPI interactive API documentation at `http://127.0.0.1:8000/docs` to test the endpoints.
+## Kubernetes Deployment
 
-## Future Modules
+### Converting from Docker Compose
 
-1. **Database Integration**
+1. Use kompose to convert Docker Compose to Kubernetes manifests(lots of modifications needed after conversion for a healthy deployment, see "Common Issues and Solutions"):
 
-   - Implement MongoDB for storing and querying factory data.
-   - Integrate the database with the existing FastAPI CRUD endpoints.
+   ```bash
+   kompose convert -f docker-compose.yml -o k8s-manifests
+   ```
 
-2. **Asynchronous Messaging**
+2. Apply the generated manifests:
+   ```bash
+   kubectl apply -f k8s-manifests/
+   ```
 
-   - Incorporate Kafka for real-time asynchronous communication between components.
-   - Enable reliable message queuing and distributed data handling.
+### Managing Kubernetes Resources
 
-## Development Notes
+- **Apply all resources**: `kubectl apply -f k8s-manifests/`
+- **Delete all resources**: `kubectl delete -f k8s-manifests/`
+- **Delete specific resource types**: `kubectl delete pods,deployments,services,pvc --all`
+- **View logs**: `kubectl logs -f deployment/api-gateway`
+- **Pod description**: `kubectl describe pod <pod-name>`
 
-- Ensure that any changes to `grpc_server.proto` are reflected by regenerating the Python files as mentioned above.
-- Follow best practices for gRPC service design, such as defining clear message structures and service methods in the `.proto` file.
-- Future modules will expand the capabilities of this system to cover database integration, real-time messaging, and enhanced system performance.
+### Configuration
+
+The system uses ConfigMaps for configuration. For example, the MQTT configuration:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mqtt-config
+data:
+  mosquitto.conf: |
+    listener 1883
+    allow_anonymous true
+    persistence false
+    log_dest stdout
+```
+
+### Common Issues and Solutions
+
+1. **Kafka Cluster ID Mismatch**:
+
+   - Solution: Delete the PVC for Kafka (`kubectl delete pvc kafka-data`) before redeploying
+
+2. **Missing ConfigMaps**:
+
+   - Solution: Create necessary ConfigMaps before deploying services (ex. for MQTT mosquitto)
+
+3. **Liveness Probe Failures**:
+   - Solution: Adjust probe parameters or ensure required utilities exist in containers (ex. kafka, zookeeeper, mqtt)
+
+## Module Details
+
+### API Gateway
+
+REST API interface providing access to system functionality and data.
+
+### MQTT Data Preprocessor
+
+Subscribes to MQTT topics, processes incoming data, and forwards to Kafka.
+
+### Database Interface
+
+Consumes processed data from Kafka and stores in MongoDB.
+
+### Anomaly Detector
+
+Analyzes data streams for anomalous patterns and triggers alerts.
+
+### PLC Simulator
+
+Generates simulated industrial data and publishes to MQTT.
+
+## Future Development
+
+- Enhanced anomaly detection with machine learning
+- Real-time dashboarding and visualization
+- Historical data analysis capabilities
+- Multi-cluster deployment support
+
+## Contributing
+
+Please follow standard Git workflow:
+
+1. Fork the repository
+2. Create feature branch
+3. Submit pull request
 
 ## License
 
-Include your preferred license here (e.g., MIT, Apache 2.0, etc.).
-
+MIT
