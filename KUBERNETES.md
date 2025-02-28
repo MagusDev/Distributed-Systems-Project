@@ -1,21 +1,3 @@
-### Converting from Docker Compose
-
-1. Use kompose to convert Docker Compose to Kubernetes manifests:
-
-   ```bash
-   kompose convert -f docker-compose.yml -o k8s-manifests
-   ```
-
-2. Apply the generated manifests:
-   ```bash
-   kubectl apply -f k8s-manifests/
-   ```
-
-````
-
-Then create a new file with the comprehensive instructions:
-
-```markdown
 # Kubernetes Deployment Guide
 
 This guide explains how to deploy and test the system using Kubernetes, with specific instructions for local development using Minikube.
@@ -38,6 +20,8 @@ This guide explains how to deploy and test the system using Kubernetes, with spe
 
    # Enable the Minikube dashboard (optional but recommended)
    minikube dashboard
+   ```
+
 ````
 
 2. **Apply Kubernetes Manifests**
@@ -130,3 +114,4 @@ When you're done testing, you can clean up resources:
 ```
 
 ```
+````

@@ -84,6 +84,19 @@ CMD ["python", "src/main.py"]
 
 For detailed instructions on deploying and running the system in Kubernetes with Minikube, see the [Kubernetes Deployment Guide](KUBERNETES.md).
 
+### Converting from Docker Compose
+
+1. Use kompose to convert Docker Compose to Kubernetes manifests:
+
+   ```bash
+   kompose convert -f docker-compose.yml -o k8s-manifests
+   ```
+
+2. Apply the generated manifests:
+   ```bash
+   kubectl apply -f k8s-manifests/
+   ```
+
 ## Module Details
 
 ### API Gateway
