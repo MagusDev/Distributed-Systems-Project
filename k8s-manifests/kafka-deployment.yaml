@@ -61,7 +61,7 @@ spec:
               command:
                 - sh
                 - -c
-                - "kafka-topics.sh --bootstrap-server localhost:9092 --list"
+                - "/usr/bin/kafka-topics --bootstrap-server localhost:9092 --list"
             failureThreshold: 3
             initialDelaySeconds: 15
             periodSeconds: 30
