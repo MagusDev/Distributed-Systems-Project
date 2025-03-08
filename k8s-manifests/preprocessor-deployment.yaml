@@ -35,6 +35,12 @@ spec:
           name: preprocessor
           ports:
             - containerPort: 8002
-          resources: {}
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 250m
+              memory: 256Mi
       restartPolicy: Always
 status: {}

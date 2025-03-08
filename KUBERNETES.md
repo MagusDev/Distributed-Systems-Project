@@ -22,8 +22,6 @@ This guide explains how to deploy and test the system using Kubernetes, with spe
    minikube dashboard
    ```
 
-
-
 2. **Apply Kubernetes Manifests**
 
    ```bash
@@ -48,6 +46,33 @@ This guide explains how to deploy and test the system using Kubernetes, with spe
    ```bash
    # Port forward the API Gateway service
    kubectl port-forward service/api-gateway 8000:8000
+   ```
+
+5. **Enablinbg HPA**
+
+   First add metrics-server to kubernetes:
+
+   ```bash
+   kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+   ```
+
+   Then add limits for cpu and memory in deployments under "containers":
+
+   ```bash
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+   ```
+
+   Then add HPA manifest for the service with kind HorizontalPodAutoscaler
+
+   verify with
+   ```bash
+   kubectl get hpa
    ```
 
 ### Running the Client GUI

@@ -43,6 +43,10 @@ spec:
           name: api-gateway
           ports:
             - containerPort: 8000
-          resources: {}
+          resources:
+            limits:
+              cpu: 500m
+            requests:
+              cpu: 250m
       restartPolicy: Always
 status: {}

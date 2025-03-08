@@ -53,8 +53,6 @@ spec:
               value: "1"
             - name: KAFKA_ZOOKEEPER_CONNECT
               value: zookeeper:2181
-            - name: KAFKA_CLUSTER_ID
-              value: "fixed-cluster-id-123"
           image: confluentinc/cp-kafka:latest
           livenessProbe:
             exec:
