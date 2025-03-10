@@ -119,6 +119,10 @@ When you're done testing, you can clean up resources:
    minikube delete
    ```
 
+## Deployment on CSC cpouta
+
+After getting kubectl and containerd ready
+
 ## Managing Kubernetes Resources
 
 - **Apply all resources**: `kubectl apply -f k8s-manifests/`

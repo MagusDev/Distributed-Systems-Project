@@ -15,4 +15,4 @@ class WebsiteUser(HttpUser):
 
 if __name__ == "__main__":
     import os
-    os.system("locust -f locustfile.py --host=http://localhost:8000")
+    os.system("locust -f locustfile.py --host=http://128.214.253.212:30000")
