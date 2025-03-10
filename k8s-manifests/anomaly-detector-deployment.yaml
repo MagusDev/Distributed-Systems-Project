@@ -27,7 +27,7 @@ spec:
         - env:
             - name: KAFKA_BROKER
               value: kafka:9092
-          image: magusdev/anomaly-detector:latest
+          image: walid852/anomaly-detector:latest
           name: anomaly-detector
           ports:
             - containerPort: 8006

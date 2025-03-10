@@ -27,7 +27,7 @@ spec:
         - env:
             - name: MQTT_BROKER
               value: mqtt
-          image: magusdev/plc-simulator:latest
+          image: walid852/plc-simulator:latest
           name: plc-simulator
           resources: {}
       restartPolicy: Always
