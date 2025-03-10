@@ -16,12 +16,19 @@ spec:
     spec:
       containers:
         - name: ml-model-trainer
-          image: walid852/ml-model-trainer:latest # Ensure this matches the image you pushed to Docker Hub
+          image: walid852/ml-model-trainer:latest
           ports:
-            - containerPort: 8521 # Adjust the port if necessary
+            - containerPort: 8521
           env:
             - name: MONGO_URI
               value: "mongodb://mongodb:27017/"
+          volumeMounts:
+            - name: model-volume
+              mountPath: /app/models
+      volumes:
+        - name: model-volume
+          persistentVolumeClaim:
+            claimName: model-storage
 
 ---
 apiVersion: v1

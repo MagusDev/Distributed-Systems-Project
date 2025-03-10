@@ -1,25 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  annotations:
-    kompose.cmd: C:\Users\Mohammad\Tools\Kompose\kompose.exe convert -o k8s-manifests
-    kompose.version: 1.26.0 (40646f47)
-  creationTimestamp: null
+  name: anomaly-detector
   labels:
     io.kompose.service: anomaly-detector
-  name: anomaly-detector
 spec:
   replicas: 1
   selector:
     matchLabels:
       io.kompose.service: anomaly-detector
-  strategy: {}
   template:
     metadata:
-      annotations:
-        kompose.cmd: C:\Users\Mohammad\Tools\Kompose\kompose.exe convert -o k8s-manifests
-        kompose.version: 1.26.0 (40646f47)
-      creationTimestamp: null
       labels:
         io.kompose.service: anomaly-detector
     spec:
@@ -38,5 +29,11 @@ spec:
             requests:
               cpu: 100m
               memory: 256Mi
+          volumeMounts:
+            - name: model-volume
+              mountPath: /app/models
+      volumes:
+        - name: model-volume
+          persistentVolumeClaim:
+            claimName: model-storage
       restartPolicy: Always
-status: {}
