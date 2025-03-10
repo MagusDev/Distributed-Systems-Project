@@ -2,9 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    kompose.cmd: C:\Users\Mohammad\Tools\Kompose\kompose.exe convert -o k8s-manifests
-    kompose.version: 1.26.0 (40646f47)
-  creationTimestamp: null
+    kompose.cmd: C:\Users\Walid\kompose.exe convert -f docker-compose.yml -o k8s-manifests
+    kompose.version: 1.35.0 (9532ceef3)
   labels:
     io.kompose.service: kafka
   name: kafka
@@ -18,13 +17,11 @@ spec:
   template:
     metadata:
       annotations:
-        kompose.cmd: C:\Users\Mohammad\Tools\Kompose\kompose.exe convert -o k8s-manifests
-        kompose.version: 1.26.0 (40646f47)
-      creationTimestamp: null
+        kompose.cmd: C:\Users\Walid\kompose.exe convert -f docker-compose.yml -o k8s-manifests
+        kompose.version: 1.35.0 (9532ceef3)
       labels:
         io.kompose.service: kafka
     spec:
-      enableServiceLinks: false
       containers:
         - env:
             - name: KAFKA_ADVERTISED_LISTENERS
@@ -53,15 +50,11 @@ spec:
               value: "1"
             - name: KAFKA_ZOOKEEPER_CONNECT
               value: zookeeper:2181
-            - name: KAFKA_CLUSTER_ID
-              value: "fixed-cluster-id-123"
           image: confluentinc/cp-kafka:latest
           livenessProbe:
             exec:
               command:
-                - sh
-                - -c
-                - "/usr/bin/kafka-topics --bootstrap-server localhost:9092 --list"
+                - kafka-topics.sh --bootstrap-server localhost:9092 --list
             failureThreshold: 3
             initialDelaySeconds: 15
             periodSeconds: 30
@@ -69,7 +62,7 @@ spec:
           name: kafka
           ports:
             - containerPort: 9092
-          resources: {}
+              protocol: TCP
           volumeMounts:
             - mountPath: /var/lib/kafka/data
               name: kafka-data
@@ -78,4 +71,3 @@ spec:
         - name: kafka-data
           persistentVolumeClaim:
             claimName: kafka-data
-status: {}

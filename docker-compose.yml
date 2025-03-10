@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   api_gateway:
     build:
@@ -58,8 +56,11 @@ services:
       - "8006:8006"
     depends_on:
       - kafka
+      - ml_model_trainer  # Ensure the trainer runs first
     environment:
       - KAFKA_BROKER=kafka:9092
+    volumes:
+      - ./ml_model_trainer/models:/app/models  # Shared model directory
 
   mqtt:
     image: eclipse-mosquitto:2.0.14
@@ -132,6 +133,23 @@ services:
       - mqtt
     environment:
       - MQTT_BROKER=mqtt
+
+  ml_model_trainer:
+    build:
+      context: ./ml_model_trainer
+      dockerfile: Dockerfile
+    depends_on:
+      - mongodb
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/
+    command: ["python", "ml_model_trainer.py"]
+    volumes:
+      - ./ml_model_trainer/models:/app/models
+    healthcheck:
+      test: ["CMD", "python", "ml_model_trainer.py"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   kafka_data:

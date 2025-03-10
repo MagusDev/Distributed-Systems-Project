@@ -4,3 +4,5 @@ numpy
 scipy
 prometheus_client
 psutil
+scikit-learn
+joblib

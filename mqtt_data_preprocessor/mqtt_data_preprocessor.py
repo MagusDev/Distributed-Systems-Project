@@ -50,7 +50,7 @@ class DataPreprocessingMicroservice:
         print("Connected to MQTT broker with result code", rc)
         client.subscribe(self.mqtt_topic)
 
-    def on_disconnect(self, client, userdata, rc):
+    def on_disconnect(self, client, userdata, rc, properties=None):
         """Handle MQTT disconnect events"""
         print(f"Disconnected from MQTT broker with result code {rc}")
         if rc != 0:

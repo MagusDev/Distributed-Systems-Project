@@ -5,12 +5,12 @@ metadata:
     kompose.cmd: C:\Users\Walid\kompose.exe convert -f docker-compose.yml -o k8s-manifests
     kompose.version: 1.35.0 (9532ceef3)
   labels:
-    io.kompose.service: mongodb
-  name: mongodb
+    io.kompose.service: db-interface
+  name: db_interface
 spec:
   ports:
-    - name: "27017"
-      port: 27017
-      targetPort: 27017
+    - name: "8003"
+      port: 8003
+      targetPort: 8003
   selector:
-    io.kompose.service: mongodb
+    io.kompose.service: db-interface

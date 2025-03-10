@@ -2,9 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    kompose.cmd: C:\Users\Mohammad\Tools\Kompose\kompose.exe convert -o k8s-manifests
-    kompose.version: 1.26.0 (40646f47)
-  creationTimestamp: null
+    kompose.cmd: C:\Users\Walid\kompose.exe convert -f docker-compose.yml -o k8s-manifests
+    kompose.version: 1.35.0 (9532ceef3)
   labels:
     io.kompose.service: mongodb
   name: mongodb
@@ -13,13 +12,11 @@ spec:
   selector:
     matchLabels:
       io.kompose.service: mongodb
-  strategy: {}
   template:
     metadata:
       annotations:
-        kompose.cmd: C:\Users\Mohammad\Tools\Kompose\kompose.exe convert -o k8s-manifests
-        kompose.version: 1.26.0 (40646f47)
-      creationTimestamp: null
+        kompose.cmd: C:\Users\Walid\kompose.exe convert -f docker-compose.yml -o k8s-manifests
+        kompose.version: 1.35.0 (9532ceef3)
       labels:
         io.kompose.service: mongodb
     spec:
@@ -28,6 +25,5 @@ spec:
           name: mongodb
           ports:
             - containerPort: 27017
-          resources: {}
+              protocol: TCP
       restartPolicy: Always
-status: {}

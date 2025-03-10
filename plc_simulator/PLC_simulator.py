@@ -28,6 +28,17 @@ class PLCSimulator:
             'oil_temperature': (20.0, 95.0)
         }
         
+        # Set normal operating intervals
+        self.intervals = {
+            'motor_speed': (1000.0, 2000.0),
+            'power_output': (100.0, 300.0),
+            'system_pressure': (2.0, 8.0),
+            'oil_temperature': (40.0, 80.0)
+        }
+        
+        # Initialize anomaly timer
+        self.next_anomaly_time = time.time() + random.randint(10, 15)
+        
         # Set up MQTT client with protocol version 5
         self.mqtt_client = mqtt.Client(protocol=mqtt.MQTTv5)
 
@@ -51,10 +62,15 @@ class PLCSimulator:
         # Simulate changes in PLC variables
         for var_name in self.variables:
             current = self.variables[var_name]
-            min_val, max_val = self.ranges[var_name]
+            min_val, max_val = self.intervals[var_name]
             change = random.uniform(-0.1, 0.1) * (max_val - min_val)
             new_value = max(min(current + change, max_val), min_val)
             self.variables[var_name] = round(new_value, 2)
+
+        # Check if it's time to simulate an anomaly
+        if time.time() >= self.next_anomaly_time:
+            self.simulate_anomaly()
+            self.next_anomaly_time = time.time() + random.randint(10, 15)
 
         # Create PLC data reading
         reading = {
@@ -69,6 +85,16 @@ class PLCSimulator:
             }
         }
         return reading
+
+    def simulate_anomaly(self):
+        # Randomly select a variable to introduce an anomaly
+        anomaly_var = random.choice(list(self.variables.keys()))
+        min_val, max_val = self.ranges[anomaly_var]
+        
+        # Introduce a significant change to simulate an anomaly
+        anomaly_value = random.uniform(min_val, max_val)
+        self.variables[anomaly_var] = round(anomaly_value, 2)
+        print(f"Anomaly simulated in {anomaly_var}: {anomaly_value}")
 
     def _get_unit(self, variable_name: str) -> str:
         units = {
