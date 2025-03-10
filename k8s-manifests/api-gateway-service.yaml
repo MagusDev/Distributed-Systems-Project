@@ -4,16 +4,15 @@ metadata:
   annotations:
     kompose.cmd: C:\Users\Mohammad\Tools\Kompose\kompose.exe convert -o k8s-manifests
     kompose.version: 1.26.0 (40646f47)
-  creationTimestamp: null
   labels:
     io.kompose.service: api-gateway
   name: api-gateway
 spec:
+  type: NodePort  # Or LoadBalancer if you have cloud provider support
   ports:
     - name: "8000"
       port: 8000
       targetPort: 8000
+      nodePort: 30000  # Optional: specify a port between 30000-32767
   selector:
     io.kompose.service: api-gateway
-status:
-  loadBalancer: {}

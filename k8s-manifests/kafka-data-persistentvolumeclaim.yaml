@@ -6,9 +6,11 @@ metadata:
     io.kompose.service: kafka-data
   name: kafka-data
 spec:
+  storageClassName: my-default-sc
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
       storage: 100Mi
+  volumeName: kafka-pv
 status: {}
