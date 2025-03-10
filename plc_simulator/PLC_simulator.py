@@ -30,10 +30,10 @@ class PLCSimulator:
         
         # Set normal operating intervals
         self.intervals = {
-            'motor_speed': (1000.0, 2000.0),
-            'power_output': (100.0, 300.0),
-            'system_pressure': (2.0, 8.0),
-            'oil_temperature': (40.0, 80.0)
+            'motor_speed': (2400.0, 3000.0),  # 20% of 3000.0 is 600.0
+            'power_output': (400.0, 500.0),   # 20% of 500.0 is 100.0
+            'system_pressure': (8.0, 10.0),   # 20% of 10.0 is 2.0
+            'oil_temperature': (76.0, 95.0)   # 20% of 95.0 is 19.0
         }
         
         # Initialize anomaly timer
@@ -47,6 +47,7 @@ class PLCSimulator:
         self.mqtt_client.on_disconnect = self.on_disconnect
         
         # Don't connect in __init__, move to run()
+        self.start_time = time.time()
 
     def on_connect(self, client, userdata, flags, rc, properties=None):
         """Handle the connection event with MQTTv5"""
@@ -68,7 +69,7 @@ class PLCSimulator:
             self.variables[var_name] = round(new_value, 2)
 
         # Check if it's time to simulate an anomaly
-        if time.time() >= self.next_anomaly_time:
+        if time.time() - self.start_time > 60 and time.time() >= self.next_anomaly_time:
             self.simulate_anomaly()
             self.next_anomaly_time = time.time() + random.randint(10, 15)
 
@@ -92,7 +93,11 @@ class PLCSimulator:
         min_val, max_val = self.ranges[anomaly_var]
         
         # Introduce a significant change to simulate an anomaly
-        anomaly_value = random.uniform(min_val, max_val)
+        if random.choice([True, False]):
+            anomaly_value = max_val * 2  # 200% higher than the max value
+        else:
+            anomaly_value = min_val * -2  # 200% lower than the min value
+        
         self.variables[anomaly_var] = round(anomaly_value, 2)
         print(f"Anomaly simulated in {anomaly_var}: {anomaly_value}")
 

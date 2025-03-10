@@ -148,35 +148,63 @@ class MLModelTrainer:
         joblib.dump(self.feature_names, self.feature_names_path)
         logging.debug(f"Model and feature names saved to {model_dir}")
 
+    def get_evaluation_scores(self):
+        """Get evaluation scores for the current model."""
+        if not self.current_model:
+            logging.error("No model is currently loaded.")
+            return None
+        
+        data = self.extract_data()
+        if not data:
+            logging.error("No data available for evaluation.")
+            return None
+        
+        preprocessed_data = self.preprocess_data(data)
+        score = self.evaluate_model(self.current_model, preprocessed_data)
+        return score
+
     def run(self):
+        start_time = time.time()
+        all_data = []
+
         while True:
+            if time.time() - start_time > 60:
+                logging.debug("First 60 seconds passed. Starting model training with all collected data.")
+                break
+
             data = self.extract_data()
             
-            if not data:
+            if data:
+                all_data.extend(data)
+                logging.debug(f"Collected {len(data)} documents. Total collected: {len(all_data)}.")
+            else:
                 logging.debug(f"No data available. Waiting for {self.wait_time} seconds before checking again.")
                 time.sleep(self.wait_time)
-                continue
 
-            logging.debug("Data found. Starting model training.")
-            preprocessed_data = self.preprocess_data(data)
+        if not all_data:
+            logging.error("No data collected in the first 60 seconds. Exiting.")
+            return
 
-            while preprocessed_data.shape[0] < self.n_clusters + 1:
-                logging.debug(f"Not enough data points to train model. Waiting for more data. Current: {preprocessed_data.shape[0]}, Required: {self.n_clusters + 1}.")
-                time.sleep(self.wait_time)
-                data = self.extract_data()
-                if data:
-                    logging.debug(f"Extracted {len(data)} more documents.")
-                    new_data = self.preprocess_data(data)
-                    preprocessed_data = pd.concat([preprocessed_data, new_data], ignore_index=True)
-                else:
-                    logging.debug("No new data found. Continuing to wait.")
+        preprocessed_data = self.preprocess_data(all_data)
 
-            n_clusters = min(self.n_clusters, preprocessed_data.shape[0] - 1)
-            if n_clusters < 2:
-                logging.warning("Not enough data points for clustering. Skipping model training.")
-                continue
+        while preprocessed_data.shape[0] < self.n_clusters + 1:
+            logging.debug(f"Not enough data points to train model. Waiting for more data. Current: {preprocessed_data.shape[0]}, Required: {self.n_clusters + 1}.")
+            time.sleep(self.wait_time)
+            data = self.extract_data()
+            if data:
+                logging.debug(f"Extracted {len(data)} more documents.")
+                new_data = self.preprocess_data(data)
+                preprocessed_data = pd.concat([preprocessed_data, new_data], ignore_index=True)
+            else:
+                logging.debug("No new data found. Continuing to wait.")
 
-            self.n_clusters = n_clusters
+        n_clusters = min(self.n_clusters, preprocessed_data.shape[0] - 1)
+        if n_clusters < 2:
+            logging.warning("Not enough data points for clustering. Skipping model training.")
+            return
+
+        self.n_clusters = n_clusters
+        try:
             new_model = self.train_model(preprocessed_data)
             new_model_score = self.evaluate_model(new_model, preprocessed_data)
 
@@ -191,6 +219,16 @@ class MLModelTrainer:
                 self.save_model(new_model)
                 self.current_model = new_model
 
+            logging.debug("Model training completed successfully. No further updates will be made.")
+            print("Model training completed successfully.")
+        except Exception as e:
+            logging.error(f"Model training failed: {e}")
+            print(f"Model training failed: {e}")
+
 if __name__ == "__main__":
     trainer = MLModelTrainer()
     trainer.run()
+    # Example usage to get evaluation scores
+    score = trainer.get_evaluation_scores()
+    if score is not None:
+        print(f"Model evaluation score: {score}")

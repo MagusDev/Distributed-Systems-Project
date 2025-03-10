@@ -35,24 +35,25 @@ class AnomalyDetectionService:
         self.model_path = os.path.join(model_folder, model_filename)
 
         # Load the trained model
-        self.model = self.load_model()
+        self.model = None
+        self.model_available = False
 
     def load_model(self):
         """Load the trained KMeans model, waiting if necessary"""
-        retries = 10
-        wait_time = 5  # Wait 5 seconds before retrying
+        wait_time = 10  # Wait 10 seconds before retrying
 
-        while retries > 0:
+        while not self.model_available:
             if os.path.exists(self.model_path):
                 logger.info(f"Loading model from {self.model_path}")
-                return joblib.load(self.model_path)
+                self.model = joblib.load(self.model_path)
+                self.model_available = True
+                logger.info("Switched to using ML model for anomaly detection.")
+                return
             
             logger.warning(f"Model not found at {self.model_path}. Retrying in {wait_time} seconds...")
             time.sleep(wait_time)
-            retries -= 1
 
-        logger.error(f"Model file not found after multiple attempts: {self.model_path}")
-        raise FileNotFoundError(f"Model file not found at {self.model_path}")
+        logger.error(f"Model file not found: {self.model_path}")
 
     def consume_message(self):
         """Consume and process messages from Kafka"""
@@ -104,25 +105,21 @@ class AnomalyDetectionService:
                 # Preprocess data to match the expected feature set
                 df = self.preprocess_data(data)
 
-                # Predict cluster labels
-                cluster_labels = self.model.predict(df)
+                # Predict cluster distances
+                distances = self.model.transform(df)
+                min_distances = distances.min(axis=1)
+                max_distance = distances.max()
+                probabilities = min_distances / max_distance
 
-                # Identify anomalies (e.g., points that are far from cluster centers)
-                anomalies = []
-                for i, label in enumerate(cluster_labels):
-                    # Use the cluster labels to determine if the point is an anomaly.
-                    # We assume -1 or a specific label could indicate an anomaly, depending on your setup.
-                    if label == -1:  # Assuming -1 indicates an anomaly
-                        anomalies.append(df.iloc[i].to_dict())
+                anomaly_likelihoods = []
+                for i, probability in enumerate(probabilities):
+                    anomaly_likelihoods.append({df.index[i]: probability})
 
-                # Track number of anomalies
-                if anomalies:
-                    self.monitor.messages_total.labels(type='anomaly').inc(len(anomalies))
-                else:
-                    self.monitor.messages_total.labels(type='normal').inc()
+                # Track number of processed messages
+                self.monitor.messages_total.labels(type='normal').inc()
 
-                logger.debug(f"Detected anomalies: {anomalies}")
-                return anomalies
+                logger.debug(f"Anomaly likelihoods: {anomaly_likelihoods}")
+                return anomaly_likelihoods
             except Exception as e:
                 self.monitor.messages_failed.inc()
                 logger.error(f"Error in anomaly detection: {e}")
@@ -144,11 +141,12 @@ class AnomalyDetectionService:
                 self.monitor.request_size.observe(len(msg_value))
 
                 # Detect anomalies
-                anomalies = self.detect_anomalies(variables)
-                if anomalies:
-                    logger.warning(f"Anomalies detected for PLC {plc_id} at {timestamp}: {anomalies}")
-                else:
-                    logger.info(f"No anomalies detected for PLC {plc_id} at {timestamp}")
+                anomaly_likelihoods = self.detect_anomalies(variables)
+                for likelihood in anomaly_likelihoods:
+                    if likelihood[list(likelihood.keys())[0]] >= 0.5:
+                        logger.warning(f"\033[91mAnomaly Detected for PLC {plc_id} at {timestamp}: {likelihood}\033[0m")
+                    else:
+                        logger.info(f"Anomaly likelihood for PLC {plc_id} at {timestamp}: {likelihood}")
 
             except Exception as e:
                 self.monitor.messages_failed.inc()
@@ -159,6 +157,10 @@ class AnomalyDetectionService:
     def run(self):
         """Run the consumer and detect anomalies continuously"""
         logger.info("Anomaly detection service started with metrics on port 8006")
+
+        while not self.model_available:
+            self.load_model()
+
         while True:
             msg = self.consume_message()
             if msg:
