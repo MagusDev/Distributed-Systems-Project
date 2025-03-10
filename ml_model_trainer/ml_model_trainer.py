@@ -137,8 +137,16 @@ class MLModelTrainer:
 
     def save_model(self, model):
         logging.debug("Saving model.")
+        
+        # Ensure the directory exists
+        model_dir = os.path.dirname(self.model_path)
+        if not os.path.exists(model_dir):
+            os.makedirs(model_dir)  # Create the directory if it does not exist
+
+        # Save the model and feature names
         joblib.dump(model, self.model_path)
         joblib.dump(self.feature_names, self.feature_names_path)
+        logging.debug(f"Model and feature names saved to {model_dir}")
 
     def run(self):
         while True:
