@@ -2,8 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    kompose.cmd: C:\Users\Walid\kompose.exe convert -f docker-compose.yml -o k8s-manifests
-    kompose.version: 1.35.0 (9532ceef3)
+    kompose.cmd: C:\Users\Mohammad\Tools\Kompose\kompose.exe convert -o k8s-manifests
+    kompose.version: 1.26.0 (40646f47)
+  creationTimestamp: null
   labels:
     io.kompose.service: mqtt
   name: mqtt
@@ -17,8 +18,9 @@ spec:
   template:
     metadata:
       annotations:
-        kompose.cmd: C:\Users\Walid\kompose.exe convert -f docker-compose.yml -o k8s-manifests
-        kompose.version: 1.35.0 (9532ceef3)
+        kompose.cmd: C:\Users\Mohammad\Tools\Kompose\kompose.exe convert -o k8s-manifests
+        kompose.version: 1.26.0 (40646f47)
+      creationTimestamp: null
       labels:
         io.kompose.service: mqtt
     spec:
@@ -27,14 +29,14 @@ spec:
           name: mqtt
           ports:
             - containerPort: 1883
-              protocol: TCP
             - containerPort: 9001
-              protocol: TCP
+          resources: {}
           volumeMounts:
             - mountPath: /mosquitto/config
-              name: mqtt-cm0
+              name: mqtt-config-volume
       restartPolicy: Always
       volumes:
-        - configMap:
-            name: mqtt-cm0
-          name: mqtt-cm0
+        - name: mqtt-config-volume
+          configMap:
+            name: mqtt-config
+status: {}

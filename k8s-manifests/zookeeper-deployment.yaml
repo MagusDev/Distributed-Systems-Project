@@ -2,8 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    kompose.cmd: C:\Users\Walid\kompose.exe convert -f docker-compose.yml -o k8s-manifests
-    kompose.version: 1.35.0 (9532ceef3)
+    kompose.cmd: C:\Users\Mohammad\Tools\Kompose\kompose.exe convert -o k8s-manifests
+    kompose.version: 1.26.0 (40646f47)
+  creationTimestamp: null
   labels:
     io.kompose.service: zookeeper
   name: zookeeper
@@ -12,11 +13,13 @@ spec:
   selector:
     matchLabels:
       io.kompose.service: zookeeper
+  strategy: {}
   template:
     metadata:
       annotations:
-        kompose.cmd: C:\Users\Walid\kompose.exe convert -f docker-compose.yml -o k8s-manifests
-        kompose.version: 1.35.0 (9532ceef3)
+        kompose.cmd: C:\Users\Mohammad\Tools\Kompose\kompose.exe convert -o k8s-manifests
+        kompose.version: 1.26.0 (40646f47)
+      creationTimestamp: null
       labels:
         io.kompose.service: zookeeper
     spec:
@@ -28,14 +31,15 @@ spec:
               value: "2000"
           image: confluentinc/cp-zookeeper:latest
           livenessProbe:
-            exec:
-              command:
-                - echo srvr | nc localhost 2181 || exit 1
-            failureThreshold: 3
+            tcpSocket:
+              port: 2181
+            initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
+            failureThreshold: 3
           name: zookeeper
           ports:
             - containerPort: 2181
-              protocol: TCP
+          resources: {}
       restartPolicy: Always
+status: {}

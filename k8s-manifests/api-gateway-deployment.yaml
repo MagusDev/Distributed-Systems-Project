@@ -2,8 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    kompose.cmd: C:\Users\Walid\kompose.exe convert -f docker-compose.yml -o k8s-manifests
-    kompose.version: 1.35.0 (9532ceef3)
+    kompose.cmd: C:\Users\Mohammad\Tools\Kompose\kompose.exe convert -o k8s-manifests
+    kompose.version: 1.26.0 (40646f47)
+  creationTimestamp: null
   labels:
     io.kompose.service: api-gateway
   name: api-gateway
@@ -12,11 +13,13 @@ spec:
   selector:
     matchLabels:
       io.kompose.service: api-gateway
+  strategy: {}
   template:
     metadata:
       annotations:
-        kompose.cmd: C:\Users\Walid\kompose.exe convert -f docker-compose.yml -o k8s-manifests
-        kompose.version: 1.35.0 (9532ceef3)
+        kompose.cmd: C:\Users\Mohammad\Tools\Kompose\kompose.exe convert -o k8s-manifests
+        kompose.version: 1.26.0 (40646f47)
+      creationTimestamp: null
       labels:
         io.kompose.service: api-gateway
     spec:
@@ -28,13 +31,11 @@ spec:
               value: mongodb://mongodb:27017/
             - name: PYTHONUNBUFFERED
               value: "1"
-          image: api-gateway
+          image: magusdev/api-gateway:latest
           livenessProbe:
-            exec:
-              command:
-                - curl
-                - -f
-                - http://localhost:8000/health
+            httpGet:
+              path: /health
+              port: 8000
             failureThreshold: 3
             initialDelaySeconds: 15
             periodSeconds: 30
@@ -48,3 +49,4 @@ spec:
             requests:
               cpu: 250m
       restartPolicy: Always
+status: {}
