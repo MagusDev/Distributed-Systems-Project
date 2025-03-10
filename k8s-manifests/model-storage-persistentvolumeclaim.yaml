@@ -4,7 +4,9 @@ metadata:
   name: model-storage
 spec:
   accessModes:
-    - ReadWriteMany # Allow multiple pods to read/write
+    - ReadWriteMany
   resources:
     requests:
       storage: 1Gi
+  storageClassName: my-default-sc
+  volumeName: model-pv
