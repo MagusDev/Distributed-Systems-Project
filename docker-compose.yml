@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
+      - "8004:8004"
     depends_on:
       - mongodb
       - kafka
