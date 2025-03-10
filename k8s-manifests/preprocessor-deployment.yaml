@@ -31,7 +31,7 @@ spec:
               value: mongodb://mongodb:27017/
             - name: MQTT_BROKER
               value: mqtt
-          image: magusdev/preprocessor:latest
+          image: walid852/preprocessor:latest
           name: preprocessor
           ports:
             - containerPort: 8002
